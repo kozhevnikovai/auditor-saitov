@@ -70,7 +70,7 @@ export interface Action {
 
 export function hostOf(url: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).host.replace(/^www\./, "");
   } catch {
     return url;
   }

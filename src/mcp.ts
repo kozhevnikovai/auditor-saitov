@@ -8,7 +8,7 @@ import { aiContext, expertPrompt } from "./ai.js";
 import { BLOCK_KEYS, hostOf } from "./report/insights.js";
 import { renderMarkdown } from "./report/md.js";
 import { loadReports, parseFormats, writeOutputs } from "./output.js";
-import { VERSION } from "./version.js";
+import { localStamp, VERSION } from "./version.js";
 
 const BLOCK = z.enum(["seo", "structure", "visual", "tech", "compliance"]);
 
@@ -30,7 +30,7 @@ export function buildServer(): McpServer {
     },
     async ({ urls, max_pages, formats, out_dir }) => {
       const first = hostOf(urls[0].includes("://") ? urls[0] : "https://" + urls[0]);
-      const outDir = out_dir ?? join(homedir(), "site-audit", `${new Date().toISOString().slice(0, 16).replace("T", "_").replace(":", "-")}-${first}`);
+      const outDir = out_dir ?? join(homedir(), "site-audit", `${localStamp()}-${first.replace(/[:\\/]/g, "_")}`);
       const { reports } = await collectSites(urls, { maxPages: max_pages, outDir, timeoutMs: 25_000 });
       const { files } = writeOutputs(reports, { outDir, formats: parseFormats(formats) });
       const summary = renderMarkdown(reports)

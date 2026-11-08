@@ -8,10 +8,10 @@ import { aiReview, resolveAi } from "./ai.js";
 import { hostOf } from "./report/insights.js";
 import { loadReports, parseFormats, writeOutputs } from "./output.js";
 import { sendWebhook, webhookPayload } from "./report/webhook.js";
-import { VERSION } from "./version.js";
+import { localStamp, VERSION } from "./version.js";
 
 const log = (m: string) => process.stderr.write(m + "\n");
-const stamp = () => new Date().toISOString().slice(0, 16).replace("T", "_").replace(":", "-");
+
 
 /** Последний прошлый прогон для того же (первого) сайта — для режима мониторинга */
 function findLast(root: string, host: string, exclude: string): string | undefined {
@@ -62,7 +62,7 @@ program
     if (urls.length > 10) throw new Error("Не больше 10 сайтов за один запуск");
     const formats = parseFormats(o.format);
     const root = "site-audit";
-    const outDir = o.out ?? join(root, `${stamp()}-${hostOf(urls[0].includes("://") ? urls[0] : "https://" + urls[0])}`);
+    const outDir = o.out ?? join(root, `${localStamp()}-${hostOf(urls[0].includes("://") ? urls[0] : "https://" + urls[0]).replace(/[:\\/]/g, "_")}`);
     let ai = o.ai ? resolveAi({ model: o.aiModel }) : null;
     if (o.ai && !ai) log("Для --ai нужен ключ: ANTHROPIC_API_KEY или OPENAI_API_KEY (+ OPENAI_BASE_URL для YandexGPT, OpenRouter, Ollama). Продолжаю без ИИ.");
 

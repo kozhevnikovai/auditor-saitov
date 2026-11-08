@@ -1,5 +1,8 @@
 node_modules/
 dist/
+build/
+site-audit/
 audit-out/
+*.tgz
 *.log
 .DS_Store

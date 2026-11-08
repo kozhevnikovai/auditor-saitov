@@ -1,0 +1,16 @@
+name: Ошибка или ложное срабатывание
+description: Проверка сработала неверно или программа упала
+labels: [bug]
+body:
+  - type: input
+    attributes: { label: Адрес сайта или страницы }
+    validations: { required: true }
+  - type: input
+    attributes: { label: Код находки, description: "Например law.consent или seo.h1 (есть в findings.csv)" }
+  - type: textarea
+    attributes: { label: Что не так, description: Что показал отчёт и что на самом деле }
+    validations: { required: true }
+  - type: dropdown
+    attributes: { label: Как запускали, options: [Claude Desktop, Claude Code, CLI, Другой MCP-клиент] }
+  - type: input
+    attributes: { label: Версия и ОС, placeholder: "1.0.0, Windows 11, Edge" }

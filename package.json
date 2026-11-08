@@ -11,19 +11,21 @@
   "files": [
     "dist",
     "prompts",
-    "plugin",
     "README.md",
     "README.en.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/build-plugin.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test",
+    "build:mcpb": "npm run build && node scripts/build-mcpb.mjs",
+    "build:media": "npm run build && node scripts/build-media.mjs"
   },
   "keywords": [
     "seo",

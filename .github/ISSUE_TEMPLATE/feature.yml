@@ -1,0 +1,9 @@
+name: Идея или новая проверка
+description: Что стоит проверять или как улучшить отчёт
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes: { label: Что добавить, description: Проверка, технология, формат отчёта, интеграция }
+    validations: { required: true }
+  - type: textarea
+    attributes: { label: Зачем, description: Какую задачу бизнеса это решает }
