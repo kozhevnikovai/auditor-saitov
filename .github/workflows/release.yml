@@ -31,5 +31,6 @@ jobs:
             site-audit-ru.tgz
             build/site-audit-ru.mcpb
       - name: npm publish (если задан NPM_TOKEN)
+        continue-on-error: true
         if: ${{ env.NODE_AUTH_TOKEN != '' }}
         run: npm publish --access public
