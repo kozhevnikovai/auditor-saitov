@@ -84,7 +84,7 @@ const LOGO = `<svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><path d
 
 /** Размерная шкала 0–100: тонкая линия, засечки, отметка значения */
 function gauge(score: number | null): string {
-  if (score === null) return `<span class="mono muted">—</span>`;
+  if (score === null) return `<span class="gauge"></span><span class="mono num muted">—</span>`;
   return `<span class="gauge" title="${score}/100"><span class="track"></span><span class="fill" style="width:${score}%"></span><span class="tick" style="left:50%"></span><span class="tick" style="left:80%"></span></span><span class="mono num">${score}</span>`;
 }
 
@@ -98,7 +98,7 @@ function siteCard(r: SiteReport, idx: number): string {
   ${limited ? `<p class="warnline">${limited}</p>` : ""}
   <div class="card-body">
     <div class="total"><span class="mono label">Итог</span><span class="mono big">${r.total ?? "—"}</span><span class="mono small muted">из 100 · ${r.pagesCrawled} стр.</span></div>
-    <table class="bars">${BLOCK_KEYS.map((k) => `<tr><td>${BLOCKS[k]}</td><td>${gauge(r.total === null ? null : r.blocks[k].score)}</td></tr>`).join("")}</table>
+    <div class="bars">${BLOCK_KEYS.map((k) => `<span class="bl">${BLOCKS[k]}</span>${gauge(r.total === null ? null : r.blocks[k].score)}`).join("")}</div>
   </div>
   ${d || m ? `<div class="shots">${d ? `<figure><img src="${d}" alt="Компьютер"><figcaption class="mono small">1440 × 900</figcaption></figure>` : ""}${m ? `<figure class="m"><img src="${m}" alt="Телефон"><figcaption class="mono small">390 × 844</figcaption></figure>` : ""}</div>` : ""}
 </section>`;
@@ -115,7 +115,13 @@ export function renderHtml(input: ReportInput): string {
   const compare = sites.length > 1;
   const date = new Date(own?.collectedAt ?? Date.now()).toLocaleDateString("ru-RU");
   const title = compare ? `Сравнение сайтов: ${sites.map((s) => hostOf(s.url)).join(", ")}` : `Аудит сайта ${hostOf(own.url)}`;
-  const best = (k: string) => Math.max(...ok.map((s) => (k === "total" ? (s.total ?? 0) : s.blocks[k as keyof SiteReport["blocks"]].score)));
+  const val = (s: SiteReport, k: string) => (k === "total" ? (s.total ?? 0) : s.blocks[k as keyof SiteReport["blocks"]].score);
+  // подсвечиваем только единственного лидера: сигнальный цвет — не больше 5% площади
+  const best = (k: string) => {
+    const vals = ok.map((s) => val(s, k));
+    const m = Math.max(...vals);
+    return vals.filter((v) => v === m).length === 1 ? m : -1;
+  };
 
   const compareTable = compare
     ? `<section><h3><span class="mono n">01</span>Сравнение</h3><div class="scroll"><table class="cmp"><thead><tr><th></th>${sites.map((s, i) => `<th>${esc(hostOf(s.url))}${i === 0 ? '<span class="mono small muted"> · вы</span>' : ""}</th>`).join("")}</tr></thead><tbody>
@@ -167,10 +173,10 @@ h3 .n{color:var(--signal-text);font-size:13px}h4{font-size:16px;font-weight:600;
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:0;border-top:1px solid var(--ink);border-left:1px solid var(--ink)}
 .card{margin:0;padding:18px;border-right:1px solid var(--ink);border-bottom:1px solid var(--ink)}.card-head h2{margin:2px 0;font-size:22px;font-weight:600}.card-head a{color:var(--pencil);text-decoration:none;word-break:break-all}
 .label{color:var(--pencil);text-transform:uppercase;letter-spacing:.04em;font-size:11px}
-.card-body{display:flex;gap:20px;margin-top:14px;align-items:flex-start}.total{display:flex;flex-direction:column;min-width:88px}.big{font-size:44px;line-height:1.1}
-.bars{border-collapse:collapse;flex:1}.bars td{padding:3px 0;font-size:13px;vertical-align:middle}.bars td:first-child{padding-right:10px;color:var(--pencil);white-space:nowrap}
-.gauge{position:relative;display:inline-block;width:120px;height:10px;vertical-align:middle;margin-right:8px}.gauge .track{position:absolute;left:0;right:0;top:5px;border-top:1px solid var(--axis)}
-.gauge .fill{position:absolute;left:0;top:3px;height:4px;background:var(--ink)}.gauge .tick{position:absolute;top:1px;height:9px;border-left:1px solid var(--axis)}.num{display:inline-block;width:28px;text-align:right}
+.card-body{margin-top:14px}.total{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}.big{font-size:44px;line-height:1.1}
+.bars{display:grid;grid-template-columns:auto minmax(60px,1fr) 34px;gap:6px 12px;align-items:center}.bl{font-size:13px;color:var(--pencil);white-space:nowrap}
+.gauge{position:relative;display:block;height:10px;overflow:hidden}.gauge .track{position:absolute;left:0;right:0;top:5px;border-top:1px solid var(--axis)}
+.gauge .fill{position:absolute;left:0;top:3px;height:4px;background:var(--ink)}.gauge .tick{position:absolute;top:1px;height:9px;border-left:1px solid var(--axis)}.num{text-align:right}
 .shots{display:flex;gap:12px;margin-top:14px;align-items:flex-end}.shots figure{margin:0;flex:1}.shots figure.m{flex:0 0 26%}.shots img{width:100%;display:block;border:1px solid var(--ink)}figcaption{color:var(--pencil);margin-top:4px}
 .warnline{border-left:3px solid var(--signal);padding:6px 10px;background:#fff;margin:10px 0 0}
 .scroll{overflow-x:auto}table.cmp{border-collapse:collapse;width:100%}table.cmp th,table.cmp td{border:1px solid var(--ink);padding:8px 10px;text-align:left}table.cmp th{font-weight:600;background:var(--plate)}
