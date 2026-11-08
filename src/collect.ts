@@ -72,7 +72,8 @@ export async function collectSites(urls: string[], options: Partial<CollectOptio
       const rep = analyze(raw);
       reports.push(rep);
       if (raw.limited === "unreachable") onProgress?.(`  не удалось открыть: ${raw.skipped[0]?.reason ?? "нет ответа"}`);
-      else onProgress?.(`  ${raw.pages.length} стр., оценка ${rep.total}/100${raw.limited === "bot-protection" ? " (сайт отдал заглушку защиты от ботов — данные неполные)" : ""}`);
+      else if (raw.limited === "bot-protection") onProgress?.(`  сайт отдал заглушку защиты от ботов — проверка неполная`);
+      else onProgress?.(`  ${raw.pages.length} стр., оценка ${rep.total}/100`);
     }
   } finally {
     await browser.close();
