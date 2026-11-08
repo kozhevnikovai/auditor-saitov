@@ -21,6 +21,17 @@ export const DEFAULTS: CollectOptions = {
 /** Веса блоков в общей оценке */
 const WEIGHTS = { seo: 0.3, structure: 0.25, visual: 0.1, tech: 0.1, compliance: 0.25 } as const;
 
+function emptyRaw(url: string, reason: string): SiteRaw {
+  const u = url.includes("://") ? url : "https://" + url;
+  return {
+    startUrl: u, origin: new URL(u).origin, https: u.startsWith("https:"),
+    robotsTxt: { found: false, sitemaps: [], disallowedStart: false }, sitemap: { found: false, url: null, urls: 0 },
+    pages: [], requestHosts: [], cookiesOnLoad: [], globals: [], html: "",
+    visual: { colors: [], fonts: [], fontSizes: [], textPairs: [], radii: [], maxContentWidth: 0, screenshots: {} },
+    skipped: [{ url: u, reason }], limited: "unreachable",
+  };
+}
+
 export function analyze(raw: SiteRaw): SiteReport {
   const blocks = {
     seo: analyzeSeo(raw),
@@ -50,7 +61,13 @@ export async function collectSites(urls: string[], options: Partial<CollectOptio
   try {
     for (const url of urls) {
       onProgress?.(`→ ${url}`);
-      const raw = await crawl(browser, url, opt);
+      let raw: SiteRaw;
+      try {
+        raw = await crawl(browser, url, opt);
+      } catch (e) {
+        // сбой одного сайта не должен ронять весь прогон
+        raw = emptyRaw(url, String((e as Error).message ?? e).split("\n")[0]);
+      }
       raws.push(raw);
       const rep = analyze(raw);
       reports.push(rep);

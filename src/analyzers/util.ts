@@ -1,5 +1,14 @@
 import type { BlockResult, Finding, Level } from "../types.js";
 
+/** decodeURIComponent, который не падает на битых %-последовательностях */
+export function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
 export function score(findings: Finding[]): number {
   const w: Record<Level, number | null> = { ok: 1, warn: 0.5, fail: 0, info: null };
   const vals = findings.map((f) => w[f.level]).filter((v): v is number => v !== null);

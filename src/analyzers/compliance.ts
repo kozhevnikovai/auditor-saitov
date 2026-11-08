@@ -1,6 +1,6 @@
 import type { BlockResult, SiteRaw } from "../types.js";
 import { detectTech } from "./tech.js";
-import { block, f } from "./util.js";
+import { block, f, safeDecode } from "./util.js";
 
 export const DISCLAIMER =
   "Это автоматические сигналы, а не юридическое заключение. Перед изменениями сверьтесь с юристом и актуальной редакцией законов.";
@@ -16,11 +16,11 @@ export function analyzeCompliance(raw: SiteRaw): BlockResult {
   const allLinks = P.flatMap((p) => [...p.internalLinks, ...p.externalLinks]);
 
   const strong = /персональн|privacy|konfiden|конфиденц/i;
-  const cand = allLinks.filter((l) => POLICY_RE.test(l.text + " " + decodeURIComponent(l.href)));
-  const policy = cand.find((l) => strong.test(l.text + " " + decodeURIComponent(l.href))) ?? cand[0];
+  const cand = allLinks.filter((l) => POLICY_RE.test(l.text + " " + safeDecode(l.href)));
+  const policy = cand.find((l) => strong.test(l.text + " " + safeDecode(l.href))) ?? cand[0];
   out.push(policy ? f("law.policy", "ok", "Есть политика обработки персональных данных", [policy.href]) : f("law.policy", "fail", "Не найдена политика обработки персональных данных (152-ФЗ, ст. 18.1: её нужно опубликовать)"));
 
-  const consentDoc = allLinks.find((l) => CONSENT_DOC_RE.test(l.text + " " + decodeURIComponent(l.href)) && l.href !== policy?.href);
+  const consentDoc = allLinks.find((l) => CONSENT_DOC_RE.test(l.text + " " + safeDecode(l.href)) && l.href !== policy?.href);
   // одна и та же форма на разных страницах считается один раз
   const seenForms = new Set<string>();
   const forms = P.flatMap((p) => p.forms.filter((x) => x.personalFields).map((x) => ({ ...x, page: p.url }))).filter((x) => {

@@ -131,8 +131,19 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
         });
         await page.waitForTimeout(2000);
       }
-      const data = await page.evaluate(extractPage);
-      const perf = await page.evaluate(extractPerf);
+      // сайт может перенаправить скриптом прямо во время сбора — ждём и пробуем ещё раз
+      const ev = async <T>(fn: () => T): Promise<T> => {
+        try {
+          return await page.evaluate(fn);
+        } catch (e) {
+          if (!/context was destroyed|navigation/i.test(String(e))) throw e;
+          await page.waitForLoadState("load").catch(() => {});
+          await page.waitForTimeout(1500);
+          return await page.evaluate(fn);
+        }
+      };
+      const data = await ev(extractPage);
+      const perf = await ev(extractPerf);
       const pd: PageData = { url: finalUrl, status: resp?.status() ?? 0, depth: sitemapOnly.has(url) ? -1 : depth, ...data, perf: { ...perf, transferBytes: transfer, requests } };
 
       if (raw.pages.length === 0) {

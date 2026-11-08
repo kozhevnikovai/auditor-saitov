@@ -35,6 +35,10 @@ program
     process.stderr.write(`Готово: ${file}\n`);
     for (const r of reports) {
       const b = r.blocks;
+      if (r.total === null) {
+        process.stdout.write(`${r.url}  не удалось проверить: ${r.skipped[0]?.reason ?? "нет ответа"}\n`);
+        continue;
+      }
       process.stdout.write(`${r.url}  итог ${r.total} | SEO ${b.seo.score} · структура ${b.structure.score} · стиль ${b.visual.score} · технологии ${b.tech.score} · законы РФ ${b.compliance.score}\n`);
     }
   });

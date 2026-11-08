@@ -1,5 +1,5 @@
 import type { BlockResult, SiteRaw } from "../types.js";
-import { block, f } from "./util.js";
+import { block, f, safeDecode } from "./util.js";
 
 const TYPES: [string, RegExp][] = [
   ["Контакты", /contact|kontakt|контакт/i],
@@ -17,7 +17,7 @@ const TYPES: [string, RegExp][] = [
 ];
 
 export function pageType(url: string, title: string): string {
-  const path = decodeURIComponent(new URL(url).pathname);
+  const path = safeDecode(new URL(url).pathname);
   if (path === "/" || path === "") return "Главная";
   const hit = TYPES.find(([, re]) => re.test(path)) ?? TYPES.find(([, re]) => re.test(title));
   return hit ? hit[0] : "Прочее";
@@ -57,7 +57,7 @@ export function analyzeStructure(raw: SiteRaw): BlockResult {
   const types = new Map<string, string[]>();
   for (const p of P) types.set(pageType(p.url, p.title), [...(types.get(pageType(p.url, p.title)) ?? []), p.url]);
   // раздел есть, если на него ведёт ссылка, даже если до него не дошёл обход
-  const linkTexts = P.flatMap((p) => [...p.navLinks, ...p.internalLinks]).map((l) => l.text + " " + decodeURIComponent(new URL(l.href).pathname));
+  const linkTexts = P.flatMap((p) => [...p.navLinks, ...p.internalLinks]).map((l) => l.text + " " + safeDecode(l.href));
   const has = (t: string) => types.has(t) || linkTexts.some((x) => (TYPES.find(([n]) => n === t)?.[1] ?? /$^/).test(x));
   out.push(has("Контакты") ? f("structure.contacts-page", "ok", "Есть страница контактов") : f("structure.contacts-page", "warn", "Не найдена страница контактов"));
   for (const t of ["Цены", "Отзывы", "Кейсы/портфолио", "Вопросы"]) if (!has(t)) out.push(f(`structure.missing.${t}`, "info", `Не найден раздел «${t}» — часто влияет на доверие и конверсию`));
