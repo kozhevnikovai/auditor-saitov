@@ -22,7 +22,12 @@ export function extractPage() {
   const internalLinks = links.filter((l) => l.href.startsWith(origin));
   const externalLinks = links.filter((l) => /^https?:/.test(l.href) && !l.href.startsWith(origin));
   const toLink = (a: Element) => ({ href: (a as HTMLAnchorElement).href, text: clean((a as HTMLElement).innerText).slice(0, 60) });
-  let navLinks = q("nav a[href], header a[href], [role=navigation] a[href], [role=menubar] a[href]").filter(visible).map(toLink).filter((l) => l.text);
+  // верхний уровень меню: видимые ссылки в шапке (выпадающие пункты ниже 220px не считаем)
+  const inHeader = (a: Element) => {
+    const t = (a as HTMLElement).getBoundingClientRect().top + scrollY;
+    return t >= 0 && t < 220;
+  };
+  let navLinks = q("nav a[href], header a[href], [role=navigation] a[href], [role=menubar] a[href]").filter(visible).filter(inHeader).map(toLink).filter((l) => l.text && l.text.length < 40);
   if (navLinks.length < 3)
     navLinks = q('[class*="menu" i] a[href], [class*="nav" i] a[href], [class*="header" i] a[href], [id*="menu" i] a[href]')
       .filter(visible)

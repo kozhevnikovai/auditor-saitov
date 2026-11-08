@@ -139,6 +139,10 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
         continue;
       }
       if (done.has(finalUrl)) continue; // та же страница после редиректа
+      if (raw.pages.length > 0 && SKIP_PATH.test(new URL(finalUrl).pathname + "/")) {
+        raw.skipped.push({ url, reason: "служебная страница (вход, корзина, кабинет)" });
+        continue;
+      }
       done.add(finalUrl);
       if (raw.pages.length === 0) {
         // главная: прокручиваем, чтобы догрузились ленивые скрипты и картинки

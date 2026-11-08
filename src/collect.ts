@@ -49,7 +49,7 @@ export function analyze(raw: SiteRaw): SiteReport {
     limited: raw.limited,
     skipped: raw.skipped,
     blocks,
-    total: raw.limited === "unreachable" ? null : total,
+    total: raw.limited ? null : total,
   };
 }
 

@@ -51,7 +51,8 @@ export function analyzeVisual(raw: SiteRaw): BlockResult {
   if (all && small / all > 0.3) out.push(f("visual.small-text", "warn", "Больше 30% текста мельче 14px — тяжело читать с телефона"));
 
   // контраст: доля текстовых блоков с контрастом ниже 4,5:1 (фон ищется по родителям; блоки на картинках пропускаем)
-  const pairs = (v.textPairs ?? []).map((p) => ({ ...p, c: contrast(toHex(p.color), toHex(p.background)) }));
+  // пары с контрастом 1:1 — почти всегда фон из псевдоэлемента или картинки, который не виден в стилях; не учитываем
+  const pairs = (v.textPairs ?? []).map((p) => ({ ...p, c: contrast(toHex(p.color), toHex(p.background)) })).filter((p) => p.c > 1.05);
   const total = pairs.reduce((a, p) => a + p.count, 0);
   const low = pairs.filter((p) => p.c < 4.5);
   const lowShare = total ? Math.round((low.reduce((a, p) => a + p.count, 0) / total) * 100) : 0;
