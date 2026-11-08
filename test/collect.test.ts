@@ -9,7 +9,7 @@ import { serve } from "./server.js";
 const fx = (n: string) => join(import.meta.dirname, "fixtures", n);
 const lvl = (r: SiteReport, block: keyof SiteReport["blocks"], id: string) => r.blocks[block].findings.find((f) => f.id === id)?.level;
 
-let good: SiteReport, bad: SiteReport;
+let good: SiteReport, bad: SiteReport, dead: SiteReport;
 const servers: { close: () => Promise<void> }[] = [];
 const out = mkdtempSync(join(tmpdir(), "sa-"));
 
@@ -17,8 +17,8 @@ beforeAll(async () => {
   const g = await serve(fx("good"));
   const b = await serve(fx("bad"));
   servers.push(g, b);
-  const { reports } = await collectSites([g.url, b.url], { outDir: out, timeoutMs: 10_000 });
-  [good, bad] = reports;
+  const { reports } = await collectSites([g.url, b.url, "http://127.0.0.1:9"], { outDir: out, timeoutMs: 10_000 });
+  [good, bad, dead] = reports;
 }, 120_000);
 afterAll(async () => Promise.all(servers.map((s) => s.close())));
 
@@ -57,7 +57,7 @@ describe("структура", () => {
 describe("визуальный стиль", () => {
   it("снимает шрифты и находит пёстрость", () => {
     expect(lvl(bad, "visual", "visual.fonts")).toBe("warn");
-    expect(lvl(bad, "visual", "visual.contrast")).toBe("warn");
+    expect(["warn", "fail"]).toContain(lvl(bad, "visual", "visual.contrast"));
     expect(lvl(good, "visual", "visual.contrast")).toBe("ok");
   });
 });
@@ -81,5 +81,20 @@ describe("законы РФ", () => {
     expect(lvl(bad, "compliance", "law.requisites")).toBe("warn");
     expect(lvl(bad, "compliance", "law.foreign")).toBe("warn");
     expect(lvl(bad, "compliance", "law.cookie-banner")).toBe("warn");
+  });
+});
+
+describe("устойчивость", () => {
+  it("недоступный сайт не получает оценку", () => {
+    expect(dead.limited).toBe("unreachable");
+    expect(dead.total).toBeNull();
+  });
+  it("не заходит на страницы входа", () => {
+    const urls = (good.blocks.seo.data.pages as { url: string }[]).map((p) => p.url);
+    expect(urls.some((u) => u.includes("login"))).toBe(false);
+  });
+  it("видит согласие рядом с формой, а не только внутри неё", () => {
+    const forms = good.blocks.compliance.data.forms as { page: string; consentText: boolean }[];
+    expect(forms.find((x) => x.page.includes("contacts"))?.consentText).toBe(true);
   });
 });

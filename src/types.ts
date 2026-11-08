@@ -75,6 +75,7 @@ export interface VisualData {
   colors: { value: string; count: number; role: "text" | "background" | "border" }[];
   fonts: { family: string; count: number }[];
   fontSizes: { px: number; count: number }[];
+  textPairs: { color: string; background: string; count: number }[];
   radii: { value: string; count: number }[];
   maxContentWidth: number;
   screenshots: { desktop?: string; mobile?: string };
@@ -93,6 +94,8 @@ export interface SiteRaw {
   html: string;
   visual: VisualData;
   skipped: { url: string; reason: string }[];
+  /** Сайт не открылся или отдал заглушку защиты от ботов */
+  limited: null | "unreachable" | "bot-protection";
 }
 
 export interface SiteReport {
@@ -100,6 +103,9 @@ export interface SiteReport {
   collectedAt: string;
   url: string;
   pagesCrawled: number;
+  /** null — данные полные; иначе причина, почему оценки неполные */
+  limited: SiteRaw["limited"];
+  skipped: SiteRaw["skipped"];
   blocks: {
     seo: BlockResult;
     structure: BlockResult;
@@ -107,7 +113,8 @@ export interface SiteReport {
     tech: BlockResult;
     compliance: BlockResult;
   };
-  total: number;
+  /** null, если сайт не удалось проверить */
+  total: number | null;
 }
 
 export interface CollectOptions {

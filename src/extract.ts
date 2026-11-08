@@ -21,9 +21,17 @@ export function extractPage() {
   });
   const internalLinks = links.filter((l) => l.href.startsWith(origin));
   const externalLinks = links.filter((l) => /^https?:/.test(l.href) && !l.href.startsWith(origin));
-  const navLinks = q("nav a[href], header a[href], [role=navigation] a[href]")
-    .map((a) => ({ href: (a as HTMLAnchorElement).href, text: clean((a as HTMLElement).innerText).slice(0, 60) }))
-    .filter((l) => l.text);
+  const toLink = (a: Element) => ({ href: (a as HTMLAnchorElement).href, text: clean((a as HTMLElement).innerText).slice(0, 60) });
+  let navLinks = q("nav a[href], header a[href], [role=navigation] a[href], [role=menubar] a[href]").filter(visible).map(toLink).filter((l) => l.text);
+  if (navLinks.length < 3)
+    navLinks = q('[class*="menu" i] a[href], [class*="nav" i] a[href], [class*="header" i] a[href], [id*="menu" i] a[href]')
+      .filter(visible)
+      .filter((a) => (a as HTMLElement).getBoundingClientRect().top + scrollY < 200)
+      .map(toLink)
+      .filter((l) => l.text && l.text.length < 40);
+  if (navLinks.length < 3)
+    navLinks = q("a[href]").filter(visible).filter((a) => { const t = (a as HTMLElement).getBoundingClientRect().top + scrollY; return t >= 0 && t < 140; }).map(toLink).filter((l) => l.text && l.text.length < 40);
+  navLinks = Array.from(new Map(navLinks.map((l) => [l.text.toLowerCase(), l])).values());
 
   const jsonLdTypes: string[] = [];
   for (const s of q('script[type="application/ld+json"]')) {
@@ -47,7 +55,18 @@ export function extractPage() {
   const og: Record<string, string> = {};
   for (const m of q('meta[property^="og:"]')) og[m.getAttribute("property")!] = (m as HTMLMetaElement).content;
 
-  const consentRe = /(согласи[еяю]|даю согласие|согласен|согласна)[^.]{0,80}(персональн|обработк)/i;
+  const consentRe = /(согласи[еяю]|согласен|согласна|соглашаетесь|соглашаюсь|принимаете|принимаю|подтверждаю|подтверждаете)[^.]{0,160}(персональн|обработк|конфиденц|политик)/i;
+  const context = (form: Element) => {
+    let el: Element | null = form;
+    let text = clean((form as HTMLElement).innerText);
+    for (let i = 0; i < 3 && el?.parentElement; i++) {
+      el = el.parentElement;
+      const t = clean((el as HTMLElement).innerText);
+      if (t.length > 4000) break;
+      text = t;
+    }
+    return { text, el: el ?? form };
+  };
   const policyRe = /(политик|положени)[^.]{0,40}(конфиденц|персональн|обработк)|privacy|policy|personal/i;
   const forms = q("form").map((f) => {
     const form = f as HTMLFormElement;
@@ -57,25 +76,27 @@ export function extractPage() {
         return { type: (el.type || el.tagName).toLowerCase(), name: el.name || el.placeholder || "", required: el.required };
       })
       .filter((x) => !["hidden", "submit", "button"].includes(x.type));
-    const text = clean(form.innerText);
+    const ctx = context(form);
+    const text = ctx.text;
+    const auth = !!form.querySelector('input[type="password"]') || /search|поиск/i.test(form.getAttribute("role") ?? "") || !!form.querySelector('input[type="search"]');
     const personalFields = fields.some(
       (x) => ["tel", "email"].includes(x.type) || /phone|tel|mail|name|имя|телефон|фио/i.test(x.name),
     );
-    const boxes = Array.from(form.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
+    const boxes = Array.from(ctx.el.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
     const consentBox = boxes.find((b) => consentRe.test(clean(b.closest("label")?.innerText || b.parentElement?.innerText)));
     return {
       action: form.action || "",
       fields,
-      personalFields,
+      personalFields: personalFields && !auth,
       consentText: consentRe.test(text),
       consentCheckbox: !!consentBox,
       consentPrechecked: !!consentBox && consentBox.defaultChecked,
-      policyLink: Array.from(form.querySelectorAll("a")).some((a) => policyRe.test(clean((a as HTMLElement).innerText) + " " + (a as HTMLAnchorElement).href)),
+      policyLink: Array.from(ctx.el.querySelectorAll("a")).some((a) => policyRe.test(clean((a as HTMLElement).innerText) + " " + (a as HTMLAnchorElement).href)),
       submitText: clean((form.querySelector('button, input[type="submit"]') as HTMLElement | null)?.innerText || (form.querySelector('input[type="submit"]') as HTMLInputElement | null)?.value).slice(0, 60),
     };
   });
 
-  const ctaRe = /(заказ|купить|оставить|получить|записат|заявк|консультац|рассчитат|узнать|позвон|связат|начать|попробовать|подобрать|order|buy|get|start|contact|book)/i;
+  const ctaRe = /(заказ|купить|оставить|получить|записат|заявк|консультац|рассчитат|узнать|позвон|связат|начать|попробова|подобрать|создать|зарегистр|подключ|оформ|выбрать курс|бесплатн|демо|order|buy|get|start|contact|book|try|sign up)/i;
   const ctas = q("button, a, input[type=submit]")
     .filter((el) => visible(el))
     .map((el) => ({ text: clean((el as HTMLElement).innerText || (el as HTMLInputElement).value).slice(0, 60), top: Math.round((el as HTMLElement).getBoundingClientRect().top + scrollY) }))
@@ -142,6 +163,20 @@ export function extractVisual() {
   const sizes = new Map<string, number>();
   const radii = new Map<string, number>();
   let maxWidth = 0;
+  const bgOf = (start: HTMLElement): string | null => {
+    let e: HTMLElement | null = start;
+    while (e) {
+      const c = getComputedStyle(e);
+      if (c.backgroundImage && c.backgroundImage !== "none") return null;
+      if (c.backgroundColor && !/rgba\(0, 0, 0, 0\)|transparent/.test(c.backgroundColor)) {
+        const a = c.backgroundColor.match(/rgba\([^)]*,\s*([\d.]+)\)/);
+        if (!a || Number(a[1]) > 0.9) return c.backgroundColor;
+      }
+      e = e.parentElement;
+    }
+    return "rgb(255, 255, 255)";
+  };
+  const pairs = new Map<string, number>();
   for (const el of els) {
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) continue;
@@ -151,6 +186,8 @@ export function extractVisual() {
       inc(text, cs.color);
       inc(fonts, cs.fontFamily.split(",")[0].replace(/["']/g, "").trim());
       inc(sizes, String(Math.round(parseFloat(cs.fontSize))));
+      const bgc = bgOf(el);
+      if (bgc && parseFloat(cs.opacity) > 0.5) inc(pairs, cs.color + "|" + bgc);
     }
     if (cs.backgroundColor && !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor)) inc(bg, cs.backgroundColor);
     if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none") inc(border, cs.borderTopColor);
@@ -165,7 +202,8 @@ export function extractVisual() {
       ...top(border, 4).map(([value, count]) => ({ value, count, role: "border" as const })),
     ],
     fonts: top(fonts, 6).map(([family, count]) => ({ family, count })),
-    fontSizes: top(sizes, 12).map(([px, count]) => ({ px: Number(px), count })).sort((a, b) => a.px - b.px),
+    textPairs: top(pairs, 40).map(([k, count]) => ({ color: k.split("|")[0], background: k.split("|")[1], count })),
+    fontSizes: top(sizes, 24).map(([px, count]) => ({ px: Number(px), count })).sort((a, b) => a.px - b.px),
     radii: top(radii, 6).map(([value, count]) => ({ value, count })),
     maxContentWidth: maxWidth,
   };

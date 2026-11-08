@@ -6,7 +6,7 @@ const TYPES: [string, RegExp][] = [
   ["О компании", /about|o-kompanii|o-nas|company|о-компании|о-нас/i],
   ["Услуги", /service|uslug|услуг/i],
   ["Каталог", /catalog|katalog|shop|product|tovar|каталог/i],
-  ["Цены", /price|ceny|tseny|prais|цены|прайс/i],
+  ["Цены", /price|pricing|ceny|tseny|prais|tarif|цены|прайс|тариф|стоимост/i],
   ["Кейсы/портфолио", /case|portfolio|keys|proekt|project|работы|кейс/i],
   ["Отзывы", /review|otzyv|testimonial|отзыв/i],
   ["Блог/новости", /blog|news|novost|article|stat[ia]|статьи|новости/i],
@@ -39,11 +39,11 @@ export function analyzeStructure(raw: SiteRaw): BlockResult {
   const fold = home.ctas.filter((c) => c.top < 900);
   out.push(fold.length ? f("structure.cta-fold", "ok", "Призыв к действию есть на первом экране", fold.map((c) => c.text)) : f("structure.cta-fold", "warn", "На первом экране нет явной кнопки действия (заявка, звонок, купить)"));
 
-  const formPages = P.filter((p) => p.forms.some((x) => x.fields.length >= 1));
+  const formPages = P.filter((p) => p.forms.some((x) => x.personalFields));
   const minDepth = formPages.length ? Math.min(...formPages.map((p) => (p.depth < 0 ? 99 : p.depth))) : null;
   if (minDepth === null) out.push(f("structure.forms", "warn", "Не найдено ни одной формы заявки"));
   else out.push(minDepth <= 1 ? f("structure.forms", "ok", minDepth === 0 ? "Форма заявки есть на главной" : "До формы заявки — 1 клик") : f("structure.forms", "warn", `До формы заявки — ${minDepth} клика`));
-  const fieldsCount = formPages.flatMap((p) => p.forms.map((x) => x.fields.length));
+  const fieldsCount = formPages.flatMap((p) => p.forms.filter((x) => x.personalFields).map((x) => x.fields.length));
   if (fieldsCount.some((n) => n > 6)) out.push(f("structure.form-long", "warn", "Есть формы больше 6 полей — каждое лишнее поле снижает конверсию"));
 
   const phones = [...new Set(P.flatMap((p) => p.contacts.phones))];
@@ -56,7 +56,9 @@ export function analyzeStructure(raw: SiteRaw): BlockResult {
 
   const types = new Map<string, string[]>();
   for (const p of P) types.set(pageType(p.url, p.title), [...(types.get(pageType(p.url, p.title)) ?? []), p.url]);
-  const has = (t: string) => types.has(t);
+  // раздел есть, если на него ведёт ссылка, даже если до него не дошёл обход
+  const linkTexts = P.flatMap((p) => [...p.navLinks, ...p.internalLinks]).map((l) => l.text + " " + decodeURIComponent(new URL(l.href).pathname));
+  const has = (t: string) => types.has(t) || linkTexts.some((x) => (TYPES.find(([n]) => n === t)?.[1] ?? /$^/).test(x));
   out.push(has("Контакты") ? f("structure.contacts-page", "ok", "Есть страница контактов") : f("structure.contacts-page", "warn", "Не найдена страница контактов"));
   for (const t of ["Цены", "Отзывы", "Кейсы/портфолио", "Вопросы"]) if (!has(t)) out.push(f(`structure.missing.${t}`, "info", `Не найден раздел «${t}» — часто влияет на доверие и конверсию`));
 

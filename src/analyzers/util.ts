@@ -11,7 +11,7 @@ export function block(findings: Finding[], data: Record<string, unknown>): Block
 }
 
 export const f = (id: string, level: Level, message: string, evidence?: string[]): Finding =>
-  evidence && evidence.length ? { id, level, message, evidence: evidence.slice(0, 10) } : { id, level, message };
+  evidence && evidence.length ? { id, level, message, evidence: [...new Set(evidence)].slice(0, 10) } : { id, level, message };
 
 export const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 

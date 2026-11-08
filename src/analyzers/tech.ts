@@ -12,7 +12,7 @@ export interface Signature {
 }
 
 export const SIGNATURES: Signature[] = [
-  { name: "Tilda", category: "CMS/конструктор", hosts: /tildacdn|tilda\.ws/, html: /tilda/i },
+  { name: "Tilda", category: "CMS/конструктор", hosts: /tildacdn|tilda\.ws/, html: /tildacdn|data-tilda-|class="t-records"/ },
   { name: "1С-Битрикс", category: "CMS/конструктор", html: /\/bitrix\/(js|templates|cache)/, globals: /^BX$/ },
   { name: "WordPress", category: "CMS/конструктор", html: /wp-content|wp-includes/, globals: /generator:WordPress/i },
   { name: "Joomla", category: "CMS/конструктор", html: /\/media\/jui\/|Joomla/i },
@@ -27,7 +27,7 @@ export const SIGNATURES: Signature[] = [
   { name: "Vue", category: "Фреймворк", globals: /^(Vue|vue)$/ },
   { name: "Angular", category: "Фреймворк", globals: /^angular$/ },
   { name: "jQuery", category: "Фреймворк", globals: /^jQuery/ },
-  { name: "Яндекс Метрика", category: "Аналитика", hosts: /mc\.yandex\.(ru|com)|mc\.webvisor/, globals: /^ym$/ },
+  { name: "Яндекс Метрика", category: "Аналитика", hosts: /mc\.yandex\.(ru|com)|mc\.webvisor/, globals: /^ym$/, html: /mc\.yandex\.ru\/(metrika|watch)|\bym\(\s*\d{6,}/ },
   { name: "Google Analytics", category: "Аналитика", hosts: /google-analytics\.com|analytics\.google\.com/, html: /gtag\/js\?id=G-|UA-\d{4,}/, foreign: true },
   { name: "Google Tag Manager", category: "Аналитика", hosts: /googletagmanager\.com/, foreign: true },
   { name: "Top.Mail.ru", category: "Аналитика", hosts: /top-fwz1\.mail\.ru|top\.mail\.ru/, globals: /^_tmr$/ },
@@ -76,7 +76,8 @@ export function analyzeTech(raw: SiteRaw): BlockResult {
   const cms = [...by("CMS/конструктор"), ...by("Фреймворк").filter((x) => x !== "jQuery")];
   out.push(f("tech.platform", "info", cms.length ? `Платформа: ${cms.join(", ")}` : "Платформа не определена (самописный сайт или скрыта)"));
   const an = by("Аналитика");
-  out.push(an.includes("Яндекс Метрика") ? f("tech.metrika", "ok", "Установлена Яндекс Метрика") : f("tech.metrika", an.length ? "warn" : "fail", an.length ? "Нет Яндекс Метрики — в РФ это основной источник данных о трафике" : "Не найдено ни одной системы аналитики"));
+  out.push(an.includes("Яндекс Метрика") ? f("tech.metrika", "ok", "Установлена Яндекс Метрика") : f("tech.metrika", "warn", an.length ? "Не найдена Яндекс Метрика — в РФ это основной источник данных о трафике (если она грузится только после согласия на cookie, это нормально)" : "Не найдено систем аналитики (возможно, загружаются только после согласия на cookie)"));
+  out.push(raw.https ? f("tech.https", "ok", "HTTPS") : f("tech.https", "fail", "Нет HTTPS"));
   const leadTools = [...by("Коллтрекинг/сквозная"), ...by("CRM"), ...by("Чат/виджет"), ...by("Квизы/лидогенерация")];
   out.push(leadTools.length ? f("tech.leads", "ok", "Инструменты работы с заявками", leadTools) : f("tech.leads", "info", "Не видно коллтрекинга, онлайн-чата или CRM-виджета"));
   const ads = by("Реклама/пиксели");

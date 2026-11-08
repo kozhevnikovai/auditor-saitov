@@ -35,8 +35,10 @@ export function analyze(raw: SiteRaw): SiteReport {
     collectedAt: new Date().toISOString(),
     url: raw.startUrl,
     pagesCrawled: raw.pages.length,
+    limited: raw.limited,
+    skipped: raw.skipped,
     blocks,
-    total,
+    total: raw.limited === "unreachable" ? null : total,
   };
 }
 
@@ -52,7 +54,8 @@ export async function collectSites(urls: string[], options: Partial<CollectOptio
       raws.push(raw);
       const rep = analyze(raw);
       reports.push(rep);
-      onProgress?.(`  ${raw.pages.length} стр., оценка ${rep.total}/100${raw.skipped.length ? `, пропущено ${raw.skipped.length}` : ""}`);
+      if (raw.limited === "unreachable") onProgress?.(`  не удалось открыть: ${raw.skipped[0]?.reason ?? "нет ответа"}`);
+      else onProgress?.(`  ${raw.pages.length} стр., оценка ${rep.total}/100${raw.limited === "bot-protection" ? " (сайт отдал заглушку защиты от ботов — данные неполные)" : ""}`);
     }
   } finally {
     await browser.close();

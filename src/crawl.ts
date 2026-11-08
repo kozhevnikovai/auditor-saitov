@@ -6,6 +6,8 @@ import type { Browser, BrowserContext } from "playwright-core";
 import type { CollectOptions, PageData, SiteRaw } from "./types.js";
 import { extractGlobals, extractPage, extractPerf, extractVisual, mobileOverflow, PERF_INIT } from "./extract.js";
 
+/** Служебные страницы: вход, корзина, личный кабинет — их не оцениваем */
+export const SKIP_PATH = /\/(login|logout|signin|sign-in|signup|sign-up|register|registration|auth|oauth|account|cabinet|lk|profile|cart|basket|korzina|checkout|order\/|wishlist|compare|search|cms\/system|wp-admin|wp-login|bitrix\/admin)(\/|\?|$|\.)/i;
 const SKIP_EXT = /\.(pdf|jpe?g|png|gif|webp|svg|zip|rar|docx?|xlsx?|pptx?|mp4|mp3|avi|ico|xml|json|txt)(\?|$)/i;
 
 export function normalizeUrl(u: string): string {
@@ -28,7 +30,7 @@ async function fetchText(ctx: BrowserContext, url: string, timeout: number): Pro
 
 export async function crawl(browser: Browser, startUrl: string, opt: CollectOptions): Promise<SiteRaw> {
   const start = normalizeUrl(startUrl.includes("://") ? startUrl : "https://" + startUrl);
-  const origin = new URL(start).origin;
+  let origin = new URL(start).origin;
   const ctx = await browser.newContext({ userAgent: opt.userAgent, viewport: { width: 1440, height: 900 }, locale: "ru-RU", ignoreHTTPSErrors: true });
   ctx.setDefaultTimeout(opt.timeoutMs);
   await ctx.addInitScript(PERF_INIT);
@@ -40,7 +42,13 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
   const sitemaps = robots.getSitemaps().map((s) => { try { return new URL(s, origin).toString(); } catch { return s; } });
   const sitemapUrl = sitemaps[0] ?? origin + "/sitemap.xml";
   const sm = await fetchText(ctx, sitemapUrl, opt.timeoutMs);
-  const sitemapLocs = sm.text ? Array.from(sm.text.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)).flatMap((m) => { try { return [new URL(m[1], origin).toString()]; } catch { return []; } }) : [];
+  let smText = sm.text;
+  if (/<sitemapindex/i.test(smText)) {
+    // индекс sitemap — берём первый вложенный файл
+    const child = smText.match(/<loc>\s*([^<\s]+)\s*<\/loc>/);
+    smText = child ? (await fetchText(ctx, new URL(child[1], origin).toString(), opt.timeoutMs)).text : "";
+  }
+  const sitemapLocs = smText ? Array.from(smText.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)).flatMap((m) => { try { return [new URL(m[1], origin).toString()]; } catch { return []; } }) : [];
 
   const raw: SiteRaw = {
     startUrl: start,
@@ -53,9 +61,11 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
     cookiesOnLoad: [],
     globals: [],
     html: "",
-    visual: { colors: [], fonts: [], fontSizes: [], radii: [], maxContentWidth: 0, screenshots: {} },
+    visual: { colors: [], fonts: [], fontSizes: [], textPairs: [], radii: [], maxContentWidth: 0, screenshots: {} },
     skipped: [],
+    limited: null,
   };
+  const done = new Set<string>();
 
   const hosts = new Set<string>();
   const queue: { url: string; depth: number }[] = [{ url: start, depth: 0 }];
@@ -64,7 +74,7 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
   for (const u of sitemapLocs.slice(0, 200)) {
     try {
       const n = normalizeUrl(u);
-      if (n.startsWith(origin) && !seen.has(n)) {
+      if (n.startsWith(origin) && !seen.has(n) && !SKIP_PATH.test(new URL(n).pathname + "/") && !new URL(n).search) {
         seen.add(n);
         queue.push({ url: n, depth: 9 });
       }
@@ -104,9 +114,22 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
       const resp = await page.goto(url, { waitUntil: "load", timeout: opt.timeoutMs });
       await page.waitForTimeout(1200);
       const finalUrl = normalizeUrl(page.url());
-      if (!finalUrl.startsWith(origin)) {
+      if (!finalUrl.startsWith(origin) && raw.pages.length > 0) {
         raw.skipped.push({ url, reason: "редирект на другой домен: " + finalUrl });
         continue;
+      }
+      if (done.has(finalUrl)) continue; // та же страница после редиректа
+      done.add(finalUrl);
+      if (raw.pages.length === 0) {
+        // главная: прокручиваем, чтобы догрузились ленивые скрипты и картинки
+        await page.evaluate(async () => {
+          for (let y = 0; y < Math.min(document.body.scrollHeight, 6000); y += 700) {
+            window.scrollTo(0, y);
+            await new Promise((r) => setTimeout(r, 150));
+          }
+          window.scrollTo(0, 0);
+        });
+        await page.waitForTimeout(2000);
       }
       const data = await page.evaluate(extractPage);
       const perf = await page.evaluate(extractPerf);
@@ -131,11 +154,19 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
           raw.visual.screenshots.mobile = m;
         }
       }
+      if (raw.pages.length === 0 && !finalUrl.startsWith(origin)) {
+        // главная редиректит на другой хост (например, www) — продолжаем обход на нём
+        origin = new URL(finalUrl).origin;
+        raw.origin = origin;
+        raw.https = origin.startsWith("https:");
+      }
+      if (raw.pages.length === 0 && data.wordCount < 30 && data.internalLinks.length < 3) raw.limited = "bot-protection";
       raw.pages.push(pd);
       for (const l of data.internalLinks) {
         try {
           const n = normalizeUrl(l.href);
-          if (!n.startsWith(origin) || SKIP_EXT.test(n) || seen.has(n)) continue;
+          if (!n.startsWith(origin) || SKIP_EXT.test(n) || SKIP_PATH.test(new URL(n).pathname + "/") || seen.has(n)) continue;
+          if (new URL(n).search && !/^\?(page|p)=\d+$/.test(new URL(n).search)) continue; // фильтры, сортировки, модальные окна
           seen.add(n);
           queue.push({ url: n, depth: depth + 1 });
         } catch {
@@ -153,6 +184,7 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
       await page.close();
     }
   }
+  if (!raw.pages.length) raw.limited = "unreachable";
   raw.requestHosts = [...hosts].sort();
   await ctx.close();
   return raw;

@@ -15,15 +15,24 @@ export function analyzeCompliance(raw: SiteRaw): BlockResult {
   const out = [];
   const allLinks = P.flatMap((p) => [...p.internalLinks, ...p.externalLinks]);
 
-  const policy = allLinks.find((l) => POLICY_RE.test(l.text + " " + decodeURIComponent(l.href)));
+  const strong = /персональн|privacy|konfiden|конфиденц/i;
+  const cand = allLinks.filter((l) => POLICY_RE.test(l.text + " " + decodeURIComponent(l.href)));
+  const policy = cand.find((l) => strong.test(l.text + " " + decodeURIComponent(l.href))) ?? cand[0];
   out.push(policy ? f("law.policy", "ok", "Есть политика обработки персональных данных", [policy.href]) : f("law.policy", "fail", "Не найдена политика обработки персональных данных (152-ФЗ, ст. 18.1: её нужно опубликовать)"));
 
   const consentDoc = allLinks.find((l) => CONSENT_DOC_RE.test(l.text + " " + decodeURIComponent(l.href)) && l.href !== policy?.href);
-  const forms = P.flatMap((p) => p.forms.filter((x) => x.personalFields).map((x) => ({ ...x, page: p.url })));
+  // одна и та же форма на разных страницах считается один раз
+  const seenForms = new Set<string>();
+  const forms = P.flatMap((p) => p.forms.filter((x) => x.personalFields).map((x) => ({ ...x, page: p.url }))).filter((x) => {
+    const key = x.fields.map((y) => y.type + ":" + y.name).join(",") + "|" + x.submitText;
+    if (seenForms.has(key)) return false;
+    seenForms.add(key);
+    return true;
+  });
   if (!forms.length) out.push(f("law.forms", "info", "Форм со сбором персональных данных не найдено"));
   else {
     const noConsent = forms.filter((x) => !x.consentText && !x.consentCheckbox);
-    out.push(noConsent.length ? f("law.consent", "fail", `Формы без согласия на обработку ПДн: ${noConsent.length} из ${forms.length}`, noConsent.map((x) => x.page)) : f("law.consent", "ok", "Во всех формах есть согласие на обработку ПДн"));
+    out.push(noConsent.length ? f("law.consent", "fail", `Формы без согласия на обработку ПДн рядом с кнопкой: ${noConsent.length} из ${forms.length} уникальных`, noConsent.map((x) => x.page)) : f("law.consent", "ok", "Во всех формах есть согласие на обработку ПДн"));
     const pre = forms.filter((x) => x.consentPrechecked);
     if (pre.length) out.push(f("law.prechecked", "warn", "Галочка согласия стоит заранее — согласие должно быть активным действием", pre.map((x) => x.page)));
     out.push(consentDoc ? f("law.consent-doc", "ok", "Согласие на обработку ПДн оформлено отдельным документом", [consentDoc.href]) : f("law.consent-doc", "warn", "Не найден отдельный документ согласия на обработку ПДн — с 1 сентября 2025 согласие оформляется отдельно от иных документов (152-ФЗ)"));
