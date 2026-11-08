@@ -1,0 +1,42 @@
+{
+  "manifest_version": "0.2",
+  "name": "site-audit-ru",
+  "display_name": "Аудит сайтов — site-audit-ru",
+  "version": "0.0.0",
+  "description": "Аудит сайта и конкурентов прямо в чате: SEO, структура и конверсия, визуальный стиль, технологии, соответствие законам РФ.",
+  "long_description": "Попросите Claude: «Сравни мой сайт example.ru с конкурентами a.ru и b.ru». Расширение обойдёт сайты в вашем браузере (Chrome, Edge или Яндекс Браузер), проверит SEO и скорость, путь к заявке, стиль, технологии, 152-ФЗ и реквизиты, сохранит отчёты HTML, Markdown и CSV в папку site-audit в вашей домашней папке и вернёт сводку для анализа. Работает локально, данные никуда не отправляются.",
+  "author": { "name": "Egor Kozhevnikov", "url": "https://github.com/kozhevnikovai" },
+  "repository": { "type": "git", "url": "https://github.com/kozhevnikovai/site-audit-ru" },
+  "homepage": "https://github.com/kozhevnikovai/site-audit-ru",
+  "documentation": "https://github.com/kozhevnikovai/site-audit-ru#readme",
+  "support": "https://github.com/kozhevnikovai/site-audit-ru/issues",
+  "icon": "icon.png",
+  "license": "MIT",
+  "keywords": ["seo", "audit", "competitors", "152-fz", "website", "russian"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/cli.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/cli.js", "mcp"],
+      "env": { "CHROME_PATH": "${user_config.chrome_path}" }
+    }
+  },
+  "tools": [
+    { "name": "audit_sites", "description": "Аудит 1–5 сайтов: SEO, структура, стиль, технологии, законы РФ; отчёты HTML/MD/CSV и сводка" },
+    { "name": "get_details", "description": "Подробные находки и данные по сохранённому отчёту" }
+  ],
+  "prompts": [
+    { "name": "site_audit_expert", "description": "Экспертное заключение по аудиту сайтов", "arguments": ["urls"], "text": "Проверь сайты ${arguments.urls} инструментом audit_sites и дай заключение пяти экспертов: главное, сравнение с конкурентами, план на 2 недели." }
+  ],
+  "user_config": {
+    "chrome_path": {
+      "type": "string",
+      "title": "Путь к браузеру (необязательно)",
+      "description": "Оставьте пустым — найдём Chrome, Edge или Яндекс Браузер сами.",
+      "required": false,
+      "default": ""
+    }
+  },
+  "compatibility": { "platforms": ["win32", "darwin", "linux"], "runtimes": { "node": ">=20.0.0" } }
+}

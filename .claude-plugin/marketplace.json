@@ -1,0 +1,11 @@
+{
+  "name": "kozhevnikovai",
+  "owner": { "name": "Egor Kozhevnikov", "url": "https://github.com/kozhevnikovai" },
+  "plugins": [
+    {
+      "name": "site-audit-ru",
+      "source": "./plugin",
+      "description": "Аудит сайта и конкурентов: SEO, структура, стиль, технологии, законы РФ. Команда /site-audit."
+    }
+  ]
+}

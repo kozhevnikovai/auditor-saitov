@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "site-audit-ru": {
+      "command": "npx",
+      "args": ["-y", "https://github.com/kozhevnikovai/site-audit-ru/releases/latest/download/site-audit-ru.tgz", "mcp"]
+    }
+  }
+}

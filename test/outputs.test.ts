@@ -41,7 +41,9 @@ describe("отчёты", () => {
     expect(html).toContain("Где конкуренты сильнее");
     expect(html).toContain("data:image/jpeg;base64"); // скриншоты встроены
     expect(html).toContain("font/woff2"); // шрифты встроены, без внешних запросов
-    expect(html).not.toMatch(/fonts\.googleapis|<script/);
+    expect(html).not.toMatch(/fonts\.googleapis|<script src/);
+    expect(html).toContain("Три главные проблемы");
+    expect(html).toContain("Скачать HTML");
     const md = readFileSync(files.md, "utf8");
     expect(md).toContain("| **Итог** |");
     expect(md).toContain("Что сделать в первую очередь");
