@@ -165,16 +165,16 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
         raw.html = (await page.content()).slice(0, 400_000);
         raw.visual = { ...(await page.evaluate(extractVisual)), screenshots: {} };
         if (opt.screenshots) {
-          const d = join(opt.outDir, `${slug}-desktop.png`);
-          await page.screenshot({ path: d, fullPage: false });
+          const d = join(opt.outDir, `${slug}-desktop.jpg`);
+          await page.screenshot({ path: d, fullPage: false, type: "jpeg", quality: 72 });
           raw.visual.screenshots.desktop = d;
         }
         await page.setViewportSize({ width: 390, height: 844 });
         await page.waitForTimeout(400);
         pd.horizontalOverflowMobile = await page.evaluate(mobileOverflow);
         if (opt.screenshots) {
-          const m = join(opt.outDir, `${slug}-mobile.png`);
-          await page.screenshot({ path: m, fullPage: false });
+          const m = join(opt.outDir, `${slug}-mobile.jpg`);
+          await page.screenshot({ path: m, fullPage: false, type: "jpeg", quality: 72 });
           raw.visual.screenshots.mobile = m;
         }
       }
@@ -184,7 +184,11 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
         raw.origin = origin;
         raw.https = origin.startsWith("https:");
       }
-      if (raw.pages.length === 0 && data.wordCount < 30 && data.internalLinks.length < 3) raw.limited = "bot-protection";
+      if (raw.pages.length === 0 && data.wordCount < 40 && data.internalLinks.length < 3) {
+        const html = await page.content().catch(() => "");
+        const challenge = /captcha|checking your browser|just a moment|ddos-guard|servicepipe|qrator|cf-chl|проверка браузера|подтвердите, что вы не робот/i.test(html);
+        if (!data.title || (resp && [401, 403, 429, 503].includes(resp.status())) || challenge) raw.limited = "bot-protection";
+      }
       raw.pages.push(pd);
       for (const l of data.internalLinks) {
         try {
