@@ -111,8 +111,28 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
       transfer += Number.isFinite(len) ? len : 0;
     });
     try {
+      let lastNav = Date.now();
+      page.on("framenavigated", (fr) => {
+        if (fr === page.mainFrame()) lastNav = Date.now();
+      });
+      // сайт может перенаправить скриптом прямо во время сбора — ждём и пробуем ещё раз (до 3 раз)
+      const ev = async <T>(fn: () => T): Promise<T> => {
+        for (let i = 0; ; i++) {
+          try {
+            return await page.evaluate(fn);
+          } catch (e) {
+            if (i >= 2 || !/context was destroyed|navigation/i.test(String(e))) throw e;
+            await page.waitForLoadState("load").catch(() => {});
+            await page.waitForTimeout(2000);
+          }
+        }
+      };
       const resp = await page.goto(url, { waitUntil: "load", timeout: opt.timeoutMs });
+      // ждём, пока страница перестанет перезагружаться (JS-проверки защиты от ботов), максимум 12 с
+      const t0 = Date.now();
       await page.waitForTimeout(1200);
+      while (Date.now() - lastNav < 2000 && Date.now() - t0 < 12_000) await page.waitForTimeout(500);
+      await page.waitForLoadState("load").catch(() => {});
       const finalUrl = normalizeUrl(page.url());
       if (!finalUrl.startsWith(origin) && raw.pages.length > 0) {
         raw.skipped.push({ url, reason: "редирект на другой домен: " + finalUrl });
@@ -122,7 +142,7 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
       done.add(finalUrl);
       if (raw.pages.length === 0) {
         // главная: прокручиваем, чтобы догрузились ленивые скрипты и картинки
-        await page.evaluate(async () => {
+        await ev(async () => {
           for (let y = 0; y < Math.min(document.body.scrollHeight, 6000); y += 700) {
             window.scrollTo(0, y);
             await new Promise((r) => setTimeout(r, 150));
@@ -131,17 +151,6 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
         });
         await page.waitForTimeout(2000);
       }
-      // сайт может перенаправить скриптом прямо во время сбора — ждём и пробуем ещё раз
-      const ev = async <T>(fn: () => T): Promise<T> => {
-        try {
-          return await page.evaluate(fn);
-        } catch (e) {
-          if (!/context was destroyed|navigation/i.test(String(e))) throw e;
-          await page.waitForLoadState("load").catch(() => {});
-          await page.waitForTimeout(1500);
-          return await page.evaluate(fn);
-        }
-      };
       const data = await ev(extractPage);
       const perf = await ev(extractPerf);
       const pd: PageData = { url: finalUrl, status: resp?.status() ?? 0, depth: sitemapOnly.has(url) ? -1 : depth, ...data, perf: { ...perf, transferBytes: transfer, requests } };
