@@ -4,6 +4,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Browser, BrowserContext } from "playwright-core";
 import type { CollectOptions, PageData, SiteRaw } from "./types.js";
+import { assertPublicUrl, isPublicHost, LIMITS, safeGetText, sameSite } from "./guard.js";
 import { extractGlobals, extractPage, extractPerf, extractVisual, mobileOverflow, PERF_INIT } from "./extract.js";
 
 /** Служебные страницы: вход, корзина, личный кабинет — их не оцениваем */
@@ -19,10 +20,15 @@ export function normalizeUrl(u: string): string {
   return s;
 }
 
-async function fetchText(ctx: BrowserContext, url: string, timeout: number): Promise<{ status: number; text: string }> {
+async function fetchText(ctx: BrowserContext, url: string, opt: CollectOptions): Promise<{ status: number; text: string }> {
+  const r = await safeGetText(url, { timeoutMs: opt.timeoutMs, userAgent: opt.userAgent, allowPrivate: opt.allowPrivate });
+  if (r.status !== 0) return r;
+  // запасной путь для сайтов с ошибкой сертификата: через браузер, без редиректов, после проверки адреса
   try {
-    const r = await ctx.request.get(url, { timeout, failOnStatusCode: false, maxRedirects: 5 });
-    return { status: r.status(), text: r.ok() ? await r.text() : "" };
+    await assertPublicUrl(url, opt.allowPrivate);
+    const b = await ctx.request.get(url, { timeout: opt.timeoutMs, failOnStatusCode: false, maxRedirects: 0 });
+    const len = Number(b.headers()["content-length"] ?? 0);
+    return { status: b.status(), text: b.ok() && len <= LIMITS.textBytes ? (await b.text()).slice(0, LIMITS.textBytes) : "" };
   } catch {
     return { status: 0, text: "" };
   }
@@ -30,25 +36,40 @@ async function fetchText(ctx: BrowserContext, url: string, timeout: number): Pro
 
 export async function crawl(browser: Browser, startUrl: string, opt: CollectOptions): Promise<SiteRaw> {
   const start = normalizeUrl(startUrl.includes("://") ? startUrl : "https://" + startUrl);
+  await assertPublicUrl(start, opt.allowPrivate);
   let origin = new URL(start).origin;
   const ctx = await browser.newContext({ userAgent: opt.userAgent, viewport: { width: 1440, height: 900 }, locale: "ru-RU", ignoreHTTPSErrors: true });
   ctx.setDefaultTimeout(opt.timeoutMs);
+  // любой запрос браузера (страницы, редиректы, скрипты, картинки) — только на публичные адреса
+  if (!opt.allowPrivate) {
+    await ctx.route("**/*", async (route) => {
+      const u = route.request().url();
+      if (/^(data|blob|about):/.test(u)) return route.continue();
+      try {
+        const url = new URL(u);
+        if ((url.protocol === "http:" || url.protocol === "https:") && (await isPublicHost(url.hostname))) return route.continue();
+      } catch { /* некорректный адрес */ }
+      return route.abort("blockedbyclient");
+    });
+  }
   await ctx.addInitScript(PERF_INIT);
 
   // robots.txt и sitemap
-  const robotsRes = await fetchText(ctx, origin + "/robots.txt", opt.timeoutMs);
+  const robotsRes = await fetchText(ctx, origin + "/robots.txt", opt);
   const robots = robotsParser(origin + "/robots.txt", robotsRes.text);
   const allowed = (u: string) => opt.ignoreRobots || robots.isAllowed(u, "site-audit-ru") !== false;
   const sitemaps = robots.getSitemaps().map((s) => { try { return new URL(s, origin).toString(); } catch { return s; } });
-  const sitemapUrl = sitemaps[0] ?? origin + "/sitemap.xml";
-  const sm = await fetchText(ctx, sitemapUrl, opt.timeoutMs);
+  // sitemap — только своего сайта: robots.txt не должен отправлять инструмент на чужие адреса
+  const own = (u: string) => { try { return sameSite(u, origin); } catch { return false; } };
+  const sitemapUrl = sitemaps.find(own) ?? origin + "/sitemap.xml";
+  const sm = await fetchText(ctx, sitemapUrl, opt);
   let smText = sm.text;
   if (/<sitemapindex/i.test(smText)) {
-    // индекс sitemap — берём первый вложенный файл
-    const child = smText.match(/<loc>\s*([^<\s]+)\s*<\/loc>/);
-    smText = child ? (await fetchText(ctx, new URL(child[1], origin).toString(), opt.timeoutMs)).text : "";
+    // индекс sitemap — берём первый вложенный файл своего сайта
+    const child = Array.from(smText.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)).map((m) => { try { return new URL(m[1], origin).toString(); } catch { return ""; } }).find((u) => u && own(u));
+    smText = child ? (await fetchText(ctx, child, opt)).text : "";
   }
-  const sitemapLocs = smText ? Array.from(smText.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)).flatMap((m) => { try { return [new URL(m[1], origin).toString()]; } catch { return []; } }) : [];
+  const sitemapLocs = smText ? Array.from(smText.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)).slice(0, LIMITS.sitemapUrls).flatMap((m) => { try { return [new URL(m[1], origin).toString()]; } catch { return []; } }) : [];
 
   const raw: SiteRaw = {
     startUrl: start,

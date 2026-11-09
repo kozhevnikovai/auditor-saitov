@@ -1,3 +1,4 @@
+import { assertPublicUrl } from "../guard.js";
 import type { SiteReport } from "../types.js";
 import { BLOCK_KEYS, hostOf, topActions, type Diff } from "./insights.js";
 
@@ -20,7 +21,11 @@ export function webhookPayload(sites: SiteReport[], diffs: Diff[] = []) {
   };
 }
 
-export async function sendWebhook(url: string, payload: unknown): Promise<number> {
-  const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+/** Отправка сводки: только https и только публичный адрес; редиректы не выполняются, ожидание — до 20 с */
+export async function sendWebhook(url: string, payload: unknown, o: { allowPrivate?: boolean } = {}): Promise<number> {
+  const allow = o.allowPrivate ?? process.env.SITE_AUDIT_ALLOW_PRIVATE === "1";
+  const u = await assertPublicUrl(url, allow);
+  if (u.protocol !== "https:" && !allow) throw new Error("Webhook должен начинаться с https://");
+  const r = await fetch(u, { method: "POST", redirect: "manual", headers: { "content-type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20_000) });
   return r.status;
 }

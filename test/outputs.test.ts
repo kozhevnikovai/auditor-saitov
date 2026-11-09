@@ -119,7 +119,7 @@ describe("MCP-сервер", () => {
   it("отдаёт инструменты и проводит аудит через audit_sites", async () => {
     execFileSync("npx", ["tsc", "-p", "."], { cwd: join(import.meta.dirname, "..") });
     const client = new Client({ name: "test", version: "1.0.0" });
-    await client.connect(new StdioClientTransport({ command: "node", args: [join(import.meta.dirname, "..", "dist", "cli.js"), "mcp"] }));
+    await client.connect(new StdioClientTransport({ command: "node", args: [join(import.meta.dirname, "..", "dist", "cli.js"), "mcp"], env: { ...process.env } as Record<string, string> }));
     const tools = await client.listTools();
     expect(tools.tools.map((t) => t.name)).toEqual(expect.arrayContaining(["audit_sites", "get_details"]));
     const out = tmp();

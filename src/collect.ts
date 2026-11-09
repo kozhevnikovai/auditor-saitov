@@ -16,6 +16,8 @@ export const DEFAULTS: CollectOptions = {
   screenshots: true,
   userAgent: `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 site-audit-ru/${VERSION} (+https://github.com/kozhevnikovai/site-audit-ru)`,
   ignoreRobots: false,
+  // аудит внутренних сайтов в MCP-режиме: переменная окружения SITE_AUDIT_ALLOW_PRIVATE=1
+  allowPrivate: process.env.SITE_AUDIT_ALLOW_PRIVATE === "1",
 };
 
 /** Веса блоков в общей оценке */

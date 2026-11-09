@@ -125,4 +125,6 @@ export interface CollectOptions {
   userAgent: string;
   ignoreRobots: boolean;
   chromePath?: string;
+  /** Разрешить локальные и внутренние адреса (аудит сайта в локальной сети) */
+  allowPrivate?: boolean;
 }
