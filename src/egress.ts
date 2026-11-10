@@ -104,9 +104,11 @@ export async function startEgressProxy(o: { allowPrivate: boolean; resolver?: Re
     if (!hp) { client.end("HTTP/1.1 400 Bad Request\r\n\r\n"); return; }
     if (literalBlocked(hp.host, o.allowPrivate)) { client.end("HTTP/1.1 403 Forbidden\r\n\r\n"); return; }
     const up = netConnect({ host: hp.host, port: hp.port, lookup });
+    up.setTimeout(30_000, () => up.destroy(Object.assign(new Error("timeout"), { code: "ETIMEDOUT" })));
     up.once("connect", () => {
       client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       if (head.length) up.write(head);
+      up.setTimeout(0);
       up.pipe(client);
       client.pipe(up);
     });

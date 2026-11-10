@@ -73,10 +73,12 @@ describe("Прокси браузера", () => {
     const flip = (_h: string, cb: (e: null, a: Addr[]) => void) => cb(null, [{ address: n++ === 0 ? "93.184.216.34" : "127.0.0.1", family: 4 }]);
     const p = await startEgressProxy({ allowPrivate: false, resolver: flip });
     try {
-      await tunnel(p.url, `flip.test:${port}`).catch(() => ""); // первый раз — публичный адрес (в тестовой среде недоступен)
+      // предварительная проверка видит публичный адрес…
+      await expect(look(false, "flip.test", flip)).resolves.toBe("93.184.216.34");
+      // …а в момент соединения имя уже ведёт на 127.0.0.1 — соединение не устанавливается
       expect(await tunnel(p.url, `flip.test:${port}`)).toMatch(/403/);
     } finally { await p.close(); }
-  }, 30_000);
+  });
   it("с --allow-private туннель до внутреннего сайта работает", async () => {
     const p = await startEgressProxy({ allowPrivate: true, resolver: fixed({ "intranet.test": ["127.0.0.1"] }) });
     try {
