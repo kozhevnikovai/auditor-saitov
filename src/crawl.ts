@@ -38,7 +38,8 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
   const start = normalizeUrl(startUrl.includes("://") ? startUrl : "https://" + startUrl);
   await assertPublicUrl(start, opt.allowPrivate);
   let origin = new URL(start).origin;
-  const ctx = await browser.newContext({ userAgent: opt.userAgent, viewport: { width: 1440, height: 900 }, locale: "ru-RU", ignoreHTTPSErrors: true });
+  // чужой сайт ничего не скачивает на диск и не ставит фоновые скрипты (service worker)
+  const ctx = await browser.newContext({ userAgent: opt.userAgent, viewport: { width: 1440, height: 900 }, locale: "ru-RU", ignoreHTTPSErrors: true, acceptDownloads: false, serviceWorkers: "block" });
   ctx.setDefaultTimeout(opt.timeoutMs);
   // любой запрос браузера (страницы, редиректы, скрипты, картинки) — только на публичные адреса
   if (!opt.allowPrivate) {
@@ -50,6 +51,13 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
         if ((url.protocol === "http:" || url.protocol === "https:") && (await isPublicHost(url.hostname))) return route.continue();
       } catch { /* некорректный адрес */ }
       return route.abort("blockedbyclient");
+    });
+    // то же для WebSocket: страница не должна «стучаться» в локальную сеть
+    await ctx.routeWebSocket(/.*/, async (ws) => {
+      try {
+        if (await isPublicHost(new URL(ws.url()).hostname)) return void ws.connectToServer();
+      } catch { /* некорректный адрес */ }
+      await ws.close({ code: 1008, reason: "blocked" }).catch(() => {});
     });
   }
   await ctx.addInitScript(PERF_INIT);
@@ -108,6 +116,7 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
   if (opt.screenshots) mkdirSync(opt.outDir, { recursive: true });
   const slug = new URL(start).host.replace(/[^a-z0-9.-]/gi, "_");
 
+  let hangs = 0;
   while (queue.length && raw.pages.length < opt.maxPages) {
     // сначала ссылки по глубине, страницы только из sitemap — в конце
     queue.sort((a, b) => a.depth - b.depth);
@@ -117,6 +126,9 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
       continue;
     }
     const page = await ctx.newPage();
+    // «сторож»: страница, которая подвесила вкладку бесконечным скриптом, закрывается принудительно
+    let hung = false;
+    const guard = setTimeout(() => { hung = true; page.close({ runBeforeUnload: false }).catch(() => {}); }, opt.timeoutMs * 2 + 30_000);
     let transfer = 0;
     let requests = 0;
     page.on("request", (r) => {
@@ -228,9 +240,11 @@ export async function crawl(browser: Browser, startUrl: string, opt: CollectOpti
         sitemapOnly.delete(q.url);
       }
     } catch (e) {
-      raw.skipped.push({ url, reason: String((e as Error).message).split("\n")[0].slice(0, 160) });
+      if (hung && ++hangs >= 2) { queue.length = 0; raw.skipped.push({ url, reason: "сайт подвешивает браузер — обход остановлен" }); }
+      else raw.skipped.push({ url, reason: hung ? "страница зависла (бесконечный скрипт) — пропущена" : String((e as Error).message).split("\n")[0].slice(0, 160) });
     } finally {
-      await page.close();
+      clearTimeout(guard);
+      await page.close().catch(() => {});
     }
   }
   if (!raw.pages.length) raw.limited = "unreachable";

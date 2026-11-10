@@ -93,3 +93,25 @@ describe("MCP: пути", () => {
     expect(() => safeOutDir(join(tmpdir(), "..", "..", "etc"))).toThrow(/домашней папки/);
   });
 });
+
+describe("второй аудит: зависающая страница и формулы в CSV", () => {
+  it("страница с бесконечным скриптом не подвешивает проверку", async () => {
+    const s = await server((p, res) => {
+      if (p === "/robots.txt" || p === "/sitemap.xml") { res.statusCode = 404; return res.end(); }
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(page("Зависание", `<script>setTimeout(()=>{for(;;){}},1500)</script>`));
+    });
+    const out = mkdtempSync(join(tmpdir(), "hang-"));
+    const t = Date.now();
+    const { reports } = await collectSites([s.url], { outDir: out, timeoutMs: 3000, maxPages: 3, screenshots: false });
+    await s.close();
+    expect(Date.now() - t).toBeLessThan(100_000);
+    expect(JSON.stringify(reports[0])).toMatch(/зависла|подвешивает|unreachable/);
+  }, 150_000);
+  it("текст сайта не становится формулой Excel", async () => {
+    const { csvCell } = await import("../src/report/csv.js");
+    expect(csvCell('=HYPERLINK("http://evil")')).toMatch(/^"?'=/);
+    expect(csvCell("@SUM(1)")).toMatch(/^'@/);
+    expect(csvCell(71)).toBe("71");
+  });
+});

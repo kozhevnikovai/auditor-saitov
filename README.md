@@ -214,6 +214,25 @@ node dist/cli.js test-site.ru --open
 - [ ] Проверка Яндекс Бизнеса и карточек в картах (по вашему аккаунту)
 - [ ] Больше сигнатур российских сервисов
 
+## Скоро
+
+Всё, что есть сейчас, остаётся бесплатным и открытым (MIT). Платная версия — «site-audit-ru для агентств и отделов маркетинга» — в разработке, этих возможностей пока нет:
+
+- **Проверка по расписанию** — сайт и конкуренты каждую неделю, уведомление о новых проблемах — *скоро*
+- **Отчёт под вашим брендом** — логотип и цвета агентства, PDF — *скоро*
+- **Весь сайт целиком** — больше 30 страниц, история изменений — *скоро*
+- **Командный доступ и API** — *скоро*
+
+Нужно что-то из этого? [Оставьте заявку на ранний доступ](https://github.com/kozhevnikovai/site-audit-ru/issues/new?template=early-access.yml) — заявки влияют на порядок разработки.
+
+## Другие инструменты kozhevnikovai
+
+- [Протоколист](https://github.com/kozhevnikovai/protokolist) — запись встречи → протокол, локально
+- [Тендерный помощник](https://github.com/kozhevnikovai/tender-pomoshnik) — разбор госзакупок 44-ФЗ и 223-ФЗ с цитатами
+- [ai-skills-ru-business](https://github.com/kozhevnikovai/ai-skills-ru-business) — 10 навыков для Claude: КП, отзывы, вакансии, регламенты
+
+Об уязвимостях — приватно, см. [SECURITY.md](SECURITY.md).
+
 ## Автор
 
 Егор Кожевников — [github.com/kozhevnikovai](https://github.com/kozhevnikovai). Продукт № 002 линейки kozhevnikovai; № 001 — [ИИ-навыки для бизнеса в России](https://github.com/kozhevnikovai/ai-skills-ru-business).

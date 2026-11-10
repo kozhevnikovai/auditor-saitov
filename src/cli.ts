@@ -37,6 +37,7 @@ function openFile(p: string) {
 
 const program = new Command()
   .name("site-audit-ru")
+  .addHelpText("after", "\nСкоро в платной версии: проверка по расписанию, отчёт под брендом агентства, весь сайт целиком.\nПодробнее и ранний доступ: https://github.com/kozhevnikovai/site-audit-ru#скоро")
   .description("Аудит сайта и конкурентов: SEO, структура и конверсия, визуальный стиль, технологии, соответствие законам РФ")
   .version(VERSION);
 

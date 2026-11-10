@@ -344,7 +344,7 @@ li.f.ok .msg,li.f.info .msg{color:var(--pencil)}li.f.fail .msg{font-weight:600}
 .ev{color:var(--pencil);font-size:11px;margin-top:4px;word-break:break-all}.note{margin:6px 0 14px}.swatches{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}.sw{display:flex;align-items:center;gap:6px;font-size:11px}.sw i{width:22px;height:22px;border:1px solid var(--ink);display:inline-block}
 .ai{border:1px solid var(--ink);padding:16px 20px}.ai h3{border:0}
 body.only-issues li.f.ok,body.only-issues li.f.info{display:none}
-footer.stamp{display:grid;grid-template-columns:repeat(6,1fr);border-top:3px solid var(--ink)}footer.stamp div{padding:8px 12px;border-right:1px solid var(--ink)}footer.stamp div:last-child{border-right:0}footer.stamp b{display:block;font-weight:400;color:var(--pencil);font-size:11px}footer.stamp span{font-family:"Martian Mono",monospace;font-size:12px}
+p.soon{font-size:12px;color:var(--pencil);margin:10px 0 0;text-align:center}@media print{p.soon{display:none}}footer.stamp{display:grid;grid-template-columns:repeat(6,1fr);border-top:3px solid var(--ink)}footer.stamp div{padding:8px 12px;border-right:1px solid var(--ink)}footer.stamp div:last-child{border-right:0}footer.stamp b{display:block;font-weight:400;color:var(--pencil);font-size:11px}footer.stamp span{font-family:"Martian Mono",monospace;font-size:12px}
 @media (max-width:860px){.key-grid{grid-template-columns:1fr}.key-grid>div{border-left:0;padding:12px 0;border-top:1px solid var(--plate)}.cmp-grid{grid-template-columns:1fr}}
 @media (max-width:720px){main{padding:4px 14px 20px}header.top,.toolbar{padding:12px 14px}.s-meta .stack,.s-meta .small{display:none}li.f{flex-direction:column;gap:4px}footer.stamp{grid-template-columns:repeat(2,1fr)}footer.stamp div{border-bottom:1px solid var(--ink)}}
 @media print{.toolbar{display:none}.sheet{margin:0;border-width:2px}details{break-inside:avoid}section{break-inside:avoid-page}a{color:inherit}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -360,6 +360,7 @@ ${aiHtml}
 ${diffHtml}
 ${details}
 </main>
-<footer class="stamp"><div><b>Разработчик</b><span>kozhevnikovai</span></div><div><b>Номер</b><span>№ 002</span></div><div><b>Объект</b><span>${esc(sites.map((s) => hostOf(s.url)).join(", ")).slice(0, 80)}</span></div><div><b>Дата</b><span>${esc(date)}</span></div><div><b>Версия</b><span>${esc(own?.tool.version ?? "")}</span></div><div><b>Лицензия</b><span>MIT</span></div></footer>
+<footer class="stamp"><div><b>Разработчик</b><span>kozhevnikovai</span></div><div><b>Номер</b><span>№ 002</span></div><div><b>Объект</b><span>${esc(sites.map((s) => hostOf(s.url)).join(", ").slice(0, 80))}</span></div><div><b>Дата</b><span>${esc(date)}</span></div><div><b>Версия</b><span>${esc(own?.tool.version ?? "")}</span></div><div><b>Лицензия</b><span>MIT</span></div></footer>
+<p class="soon">Скоро в платной версии: проверка по расписанию с уведомлениями, отчёт под брендом агентства, весь сайт целиком. <a href="https://github.com/kozhevnikovai/site-audit-ru#скоро" target="_blank" rel="noopener">Подробнее</a></p>
 </div>${SCRIPT}</body></html>`;
 }
