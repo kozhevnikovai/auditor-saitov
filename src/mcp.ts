@@ -1,7 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { homedir, tmpdir } from "node:os";
+import { existsSync, statSync } from "node:fs";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { z } from "zod";
 import { collectSites } from "./collect.js";
 import { aiContext, expertPrompt } from "./ai.js";
@@ -11,6 +12,21 @@ import { loadReports, parseFormats, writeOutputs } from "./output.js";
 import { localStamp, VERSION } from "./version.js";
 
 const BLOCK = z.enum(["seo", "structure", "visual", "tech", "compliance"]);
+
+/** Папка отчётов из MCP — только внутри домашней папки пользователя (не системные каталоги) */
+export function safeOutDir(dir?: string): string | undefined {
+  if (!dir) return undefined;
+  const abs = resolve(dir);
+  const inside = (root: string) => { const rel = relative(resolve(root), abs); return !!rel && !rel.startsWith("..") && !isAbsolute(rel); };
+  if (!inside(homedir()) && !inside(tmpdir())) throw new Error("Папка для отчётов должна быть внутри домашней папки пользователя");
+  return abs;
+}
+/** Читаем только audit.json — модель не должна открывать через инструмент произвольные файлы */
+export function safeReportPath(p: string): string {
+  const abs = resolve(p);
+  if (basename(abs) !== "audit.json" || !existsSync(abs) || !statSync(abs).isFile()) throw new Error("Нужен путь к файлу audit.json из результата audit_sites");
+  return abs;
+}
 
 export function buildServer(): McpServer {
   const server = new McpServer({ name: "site-audit-ru", version: VERSION });
@@ -30,7 +46,7 @@ export function buildServer(): McpServer {
     },
     async ({ urls, max_pages, formats, out_dir }) => {
       const first = hostOf(urls[0].includes("://") ? urls[0] : "https://" + urls[0]);
-      const outDir = out_dir ?? join(homedir(), "site-audit", `${localStamp()}-${first.replace(/[:\\/]/g, "_")}`);
+      const outDir = safeOutDir(out_dir) ?? join(homedir(), "site-audit", `${localStamp()}-${first.replace(/[:\\/]/g, "_")}`);
       const { reports } = await collectSites(urls, { maxPages: max_pages, outDir, timeoutMs: 25_000 });
       const { files } = writeOutputs(reports, { outDir, formats: parseFormats(formats) });
       const summary = renderMarkdown(reports)
@@ -60,7 +76,7 @@ export function buildServer(): McpServer {
       },
     },
     async ({ report_path, site, block }) => {
-      let sites = loadReports(report_path);
+      let sites = loadReports(safeReportPath(report_path));
       if (site) sites = sites.filter((s) => hostOf(s.url).includes(site.replace(/^www\./, "")));
       const text = block
         ? JSON.stringify(sites.map((s) => ({ url: s.url, block, ...s.blocks[block] })), null, 1).slice(0, 80_000)

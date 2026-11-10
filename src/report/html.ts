@@ -30,8 +30,6 @@ export function fontFaces(): string {
     ["Geologica", "@fontsource/geologica", "geologica-latin-400-normal.woff2", 400, "U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-2193"],
     ["Geologica", "@fontsource/geologica", "geologica-cyrillic-600-normal.woff2", 600, "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116"],
     ["Geologica", "@fontsource/geologica", "geologica-latin-600-normal.woff2", 600, "U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-2193"],
-    ["Martian Mono", "@fontsource/martian-mono", "martian-mono-cyrillic-400-normal.woff2", 400, "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116"],
-    ["Martian Mono", "@fontsource/martian-mono", "martian-mono-latin-400-normal.woff2", 400, "U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-2193"],
   ];
   return faces
     .map(([fam, pkg, file, w, range]) => {
@@ -80,7 +78,7 @@ export function mdToHtml(md: string): string {
   return out.join("\n");
 }
 
-const LOGO = `<svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><path d="M186 146 V366 M186 276 L320 146 M226 237 L330 366" fill="none" stroke="#161616" stroke-width="36" stroke-linecap="square"/><circle cx="352" cy="146" r="22" fill="#FF5A1F"/></svg>`;
+const LOGO = `<svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><path d="M186 146 V366 M186 276 L320 146 M226 237 L330 366" fill="none" stroke="#1A1A19" stroke-width="36" stroke-linecap="square"/><circle cx="352" cy="146" r="22" fill="#C2410C"/></svg>`;
 
 // ───────────────────────────── вспомогательное ─────────────────────────────
 
@@ -124,27 +122,27 @@ function radar(sites: SiteReport[]): string {
   };
   const ring = (v: number) => KEYS.map((_, i) => pt(i, v).join(",")).join(" ");
   const dashes = ["7 4", "2 3", "10 3 2 3", "4 4"];
-  const grays = ["#5C5C5C", "#9C9C9C", "#5C5C5C", "#9C9C9C"];
+  const grays = ["#5C5C57", "#A8A8A2", "#7A7A74", "#C4C4BE"];
   const polys = ok
     .map((s, j) => {
       const pts = KEYS.map((k, i) => pt(i, s.blocks[k].score).join(",")).join(" ");
       const own = s === sites[0];
-      return `<polygon points="${pts}" fill="none" stroke="${own ? "#161616" : grays[(j - 1) % 4]}" stroke-width="${own ? 2.5 : 1.5}" ${own ? "" : `stroke-dasharray="${dashes[(j - 1) % 4]}"`}/>` +
-        (own ? KEYS.map((k, i) => { const [x, y] = pt(i, s.blocks[k].score); return `<circle cx="${x}" cy="${y}" r="3.5" fill="#FF5A1F"/>`; }).join("") : "");
+      return `<polygon points="${pts}" fill="none" stroke="${own ? "#C2410C" : grays[(j - 1) % 4]}" stroke-width="${own ? 2.5 : 1.5}" ${own ? "" : `stroke-dasharray="${dashes[(j - 1) % 4]}"`}/>` +
+        (own ? KEYS.map((k, i) => { const [x, y] = pt(i, s.blocks[k].score); return `<circle cx="${x}" cy="${y}" r="3.5" fill="#C2410C"/>`; }).join("") : "");
     })
     .join("");
   const labels = KEYS.map((k, i) => {
     const [x, y] = pt(i, 122);
     const anchor = Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end";
     const short = { seo: "SEO", structure: "Структура", visual: "Стиль", tech: "Технологии", compliance: "Законы РФ" }[k];
-    return `<text x="${x}" y="${y + (y > cy ? 14 : -4)}" text-anchor="${anchor}" font-size="13" fill="#5C5C5C">${short}</text>`;
+    return `<text x="${x}" y="${y + (y > cy ? 14 : -4)}" text-anchor="${anchor}" font-size="13" fill="#5C5C57">${short}</text>`;
   }).join("");
   const legend = ok
-    .map((s, j) => `<span class="lg"><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="${s === sites[0] ? "#161616" : grays[(j - 1) % 4]}" stroke-width="${s === sites[0] ? 2.5 : 1.5}" ${s === sites[0] ? "" : `stroke-dasharray="${dashes[(j - 1) % 4]}"`}/></svg>${esc(hostOf(s.url))}</span>`)
+    .map((s, j) => `<span class="lg"><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="${s === sites[0] ? "#C2410C" : grays[(j - 1) % 4]}" stroke-width="${s === sites[0] ? 2.5 : 1.5}" ${s === sites[0] ? "" : `stroke-dasharray="${dashes[(j - 1) % 4]}"`}/></svg>${esc(hostOf(s.url))}</span>`)
     .join("");
   return `<figure class="radar"><svg viewBox="0 0 500 350" role="img" aria-label="Сравнение по блокам">
-${[25, 50, 75, 100].map((v) => `<polygon points="${ring(v)}" fill="none" stroke="#E6E6E6" stroke-width="1"/>`).join("")}
-${KEYS.map((_, i) => { const [x, y] = pt(i, 100); return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#9C9C9C" stroke-width="1" stroke-dasharray="26 6 3 6"/>`; }).join("")}
+${[25, 50, 75, 100].map((v) => `<polygon points="${ring(v)}" fill="none" stroke="#E8E8E5" stroke-width="1"/>`).join("")}
+${KEYS.map((_, i) => { const [x, y] = pt(i, 100); return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#D6D6D2" stroke-width="1" stroke-dasharray="26 6 3 6"/>`; }).join("")}
 ${polys}${labels}</svg><figcaption>${legend}</figcaption></figure>`;
 }
 
@@ -187,7 +185,7 @@ function siteCard(r: SiteReport, idx: number): string {
   const c = counts(r);
   const st = r.total === null ? "" : verdict(r.total)[1];
   return `<section class="card">
-  <div class="card-head"><span class="mono label">Деталь ${String(idx + 1).padStart(2, "0")}${idx === 0 ? " · ваш сайт" : " · конкурент"}</span><h2>${esc(hostOf(r.url))}</h2><a class="mono small" href="${esc(r.url)}">${esc(r.url)}</a></div>
+  <div class="card-head"><span class="mono label">${idx === 0 ? "Ваш сайт" : "Конкурент " + idx}</span><h2>${esc(hostOf(r.url))}</h2><a class="mono small" href="${esc(r.url)}">${esc(r.url)}</a></div>
   ${limited ? `<p class="warnline">${limited}</p>` : ""}
   <div class="card-body">
     <div class="total"><span class="mono big ${st}">${r.total ?? "—"}</span><span class="mono small muted">из 100 · ${r.pagesCrawled} стр.</span>${r.total !== null ? `<span class="mini mono small"><span class="mark fail"></span>${c.fail} <span class="mark warn"></span>${c.warn} <span class="mark good"></span>${c.ok}</span>` : ""}</div>
@@ -238,7 +236,7 @@ export function renderHtml(input: ReportInput): string {
   const num = () => String(++sec).padStart(2, "0");
   const toc: [string, string][] = [["main", "Главное"]];
 
-  const cards = `<section id="sites"><div class="cards">${sites.map(siteCard).join("")}</div></section>`;
+  const cards = `<section id="sites" class="cards-wrap"><div class="cards">${sites.map(siteCard).join("")}</div></section>`;
 
   let compareHtml = "";
   if (compare) {
@@ -294,62 +292,65 @@ ${KEYS.map((k) => {
   const fileName = `site-audit-${hostOf(own.url)}-${(own.collectedAt ?? "").slice(0, 10)}.html`;
   return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>
 <style>${fontFaces()}
-:root{--ink:#161616;--pencil:#5C5C5C;--axis:#9C9C9C;--plate:#E6E6E6;--signal:#FF5A1F;--signal-text:#C8410F;--warn:#B07A00;--warn-bg:#FFF6DD;--good:#2F7A4B;--bad-bg:#FFF0EA}
-*{box-sizing:border-box}html{background:#fff;scroll-behavior:smooth}body{margin:0;color:var(--ink);font:400 15px/1.55 Geologica,system-ui,-apple-system,"Segoe UI",sans-serif}
-.mono,code{font-family:"Martian Mono",ui-monospace,Consolas,monospace;font-size:.86em}.small{font-size:12.5px}.muted{color:var(--pencil)}b.v{font-weight:600;font-family:"Martian Mono",ui-monospace,monospace;font-size:.9em}
-.sheet{max-width:1180px;margin:24px auto;border:3px solid var(--ink)}
-header.top{display:flex;align-items:center;gap:16px;padding:20px 28px;border-bottom:1px solid var(--ink)}.logo{width:44px;height:44px}
-header.top h1{font-size:26px;line-height:1.2;margin:0;font-weight:600}header.top .meta{margin-left:auto;text-align:right;color:var(--pencil)}
-.toolbar{position:sticky;top:0;z-index:5;background:#fff;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 28px;border-bottom:1px solid var(--ink)}
-.toolbar nav{display:flex;flex-wrap:wrap;gap:4px 16px}.toolbar nav a{color:var(--ink);text-decoration:none;font-size:13.5px;border-bottom:1px solid transparent}.toolbar nav a:hover{border-color:var(--ink)}
-.toolbar .btns{margin-left:auto;display:flex;gap:8px}.btn{font:400 12px "Martian Mono",monospace;background:#fff;color:var(--ink);border:1px solid var(--ink);padding:7px 12px;cursor:pointer}.btn:hover,.btn.on{background:var(--ink);color:#fff}
-main{padding:8px 28px 28px}section{margin:28px 0;scroll-margin-top:60px}h3{font-size:20px;font-weight:600;margin:0 0 14px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--ink);padding-bottom:8px}
-h3 .n{color:var(--signal-text);font-size:13px}h4{font-size:16px;font-weight:600;margin:20px 0 10px}
-.label{color:var(--pencil);text-transform:uppercase;letter-spacing:.04em;font-size:11px;display:block}
-.mark{display:inline-block;width:9px;height:9px;margin-right:6px;vertical-align:0}.mark.fail{background:var(--signal)}.mark.warn{background:var(--warn)}.mark.good{background:var(--good)}
-.chip{display:inline-block;font:400 10.5px "Martian Mono",monospace;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border:1px solid currentColor;white-space:nowrap}
-.chip.fail{color:var(--signal-text);background:var(--bad-bg)}.chip.warn{color:var(--warn);background:var(--warn-bg)}.chip.good{color:var(--good)}.chip.info{color:var(--axis)}
-.badge{display:inline-block;font:600 13px Geologica;padding:3px 10px;border:2px solid currentColor}.badge.good{color:var(--good)}.badge.warn{color:var(--warn)}.badge.fail{color:var(--signal-text)}
+:root{--ink:#1A1A19;--pencil:#5C5C57;--axis:#D6D6D2;--line:#E8E8E5;--plate:#F1F1EE;--bg:#FBFBFA;--signal:#C2410C;--signal-text:#B3261E;--warn:#9A5B00;--warn-bg:#FFF3DF;--good:#1F7A4A;--good-bg:#E7F3EC;--bad-bg:#FCE9E7}
+*{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{margin:0;color:var(--ink);font:400 15px/1.6 Geologica,system-ui,-apple-system,"Segoe UI",sans-serif}
+.mono,code{font-variant-numeric:tabular-nums}code{font-family:ui-monospace,Consolas,monospace;font-size:.86em;background:var(--plate);border-radius:5px;padding:0 4px}.small{font-size:12.5px}.muted{color:var(--pencil)}b.v{font-weight:600;font-variant-numeric:tabular-nums}
+.sheet{max-width:1180px;margin:24px auto;padding:0 20px}
+header.top{display:flex;align-items:center;gap:16px;padding:12px 0 18px}.logo{width:40px;height:40px;border-radius:10px;background:#fff;border:1px solid var(--line)}
+header.top h1{font-size:26px;line-height:1.2;margin:0;font-weight:600;letter-spacing:-.01em}header.top .meta{margin-left:auto;text-align:right;color:var(--pencil)}
+.toolbar{position:sticky;top:0;z-index:5;background:rgba(251,251,250,.94);backdrop-filter:blur(6px);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.toolbar nav{display:flex;flex-wrap:wrap;gap:4px 14px}.toolbar nav a{color:var(--pencil);text-decoration:none;font-size:13.5px}.toolbar nav a:hover{color:var(--ink)}
+.toolbar .btns{margin-left:auto;display:flex;gap:8px}.btn{font:500 13px Geologica,system-ui,sans-serif;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:7px 12px;cursor:pointer}.btn:hover{background:var(--plate)}.btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+main{padding:8px 0 28px}section{margin:24px 0;scroll-margin-top:60px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+h3{font-size:19px;font-weight:600;margin:0 0 14px;display:flex;align-items:baseline;gap:10px}h3 .n{display:none}h4{font-size:16px;font-weight:600;margin:20px 0 10px}
+.label{color:var(--pencil);font-size:13px;display:block}
+.mark{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}.mark.fail{background:var(--signal-text)}.mark.warn{background:var(--warn)}.mark.good{background:var(--good)}
+.chip{display:inline-block;font:600 12px Geologica,system-ui,sans-serif;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.chip.fail{color:var(--signal-text);background:var(--bad-bg)}.chip.warn{color:var(--warn);background:var(--warn-bg)}.chip.good{color:var(--good);background:var(--good-bg)}.chip.info{color:var(--pencil);background:var(--plate)}
+.badge{display:inline-block;font:600 13px Geologica;padding:3px 12px;border-radius:999px}.badge.good{color:var(--good);background:var(--good-bg)}.badge.warn{color:var(--warn);background:var(--warn-bg)}.badge.fail{color:var(--signal-text);background:var(--bad-bg)}
 .fail.big,.fail.s-score{color:var(--signal-text)}.warn.big,.warn.s-score{color:var(--warn)}.good.big,.good.s-score{color:var(--good)}
 /* Главное */
-.key{border:3px solid var(--ink);padding:22px 24px;margin-top:22px}.key-grid{display:grid;grid-template-columns:1.1fr 1.2fr 1fr;gap:0}.key-grid>div{padding:0 22px;border-left:1px solid var(--ink)}.key-grid>div:first-child{padding-left:0;border-left:0}
-.big-wrap{display:flex;align-items:baseline;gap:6px;margin:4px 0 8px}.huge{font-size:64px;line-height:1}.huge2{font-size:40px;line-height:1.1}.place{margin:4px 0 10px}
+.key{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.key-grid{display:grid;grid-template-columns:1.1fr 1.2fr 1fr;gap:0}.key-grid>div{padding:0 22px;border-left:1px solid var(--line)}.key-grid>div:first-child{padding-left:0;border-left:0}
+.big-wrap{display:flex;align-items:baseline;gap:6px;margin:4px 0 8px}.huge{font-size:60px;line-height:1;font-weight:600;font-variant-numeric:tabular-nums}.huge2{font-size:38px;line-height:1.1;font-weight:600}.place{margin:4px 0 10px}
 .cnt{font-size:15px;margin:6px 0}.cnt b{font-size:17px;margin-right:4px}
-.stack{display:flex;height:8px;width:100%;max-width:220px;background:var(--plate);margin-top:6px}.stack.wide{max-width:none;height:10px;margin-top:12px}.stack span{display:block;height:100%}.stack .fail{background:var(--signal)}.stack .warn{background:var(--warn)}.stack .good{background:var(--good)}
-.k-top{margin-top:20px;border-top:1px solid var(--ink);padding-top:14px}.k-top ol{margin:8px 0 0;padding:0;list-style:none;counter-reset:k}.k-top li{display:flex;gap:12px;align-items:baseline;padding:6px 0;border-bottom:1px dashed var(--axis)}.k-top li:last-child{border:0}
+.stack{display:flex;height:8px;width:100%;max-width:220px;background:var(--plate);border-radius:4px;overflow:hidden;margin-top:6px}.stack.wide{max-width:none;height:10px;margin-top:12px}.stack span{display:block;height:100%}.stack .fail{background:var(--signal-text)}.stack .warn{background:#D9A441}.stack .good{background:#7BB496}
+.k-top{margin-top:20px;border-top:1px solid var(--line);padding-top:14px}.k-top ol{margin:8px 0 0;padding:0;list-style:none;counter-reset:k}.k-top li{display:flex;gap:12px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}.k-top li:last-child{border:0}
 /* карточки */
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));border-top:1px solid var(--ink);border-left:1px solid var(--ink)}
-.card{margin:0;padding:18px;border-right:1px solid var(--ink);border-bottom:1px solid var(--ink)}.card-head h2{margin:2px 0;font-size:22px;font-weight:600}.card-head a{color:var(--pencil);text-decoration:none;word-break:break-all}
-.card-body{margin-top:14px}.total{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}.big{font-size:44px;line-height:1.1}.mini{margin-left:auto;color:var(--pencil)}.mini .mark{margin-left:6px}
+section.cards-wrap{background:none;border:0;box-shadow:none;padding:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.card{margin:0;padding:18px 20px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.card-head h2{margin:2px 0;font-size:21px;font-weight:600}.card-head a{color:var(--pencil);text-decoration:none;word-break:break-all}
+.card-body{margin-top:14px}.total{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}.big{font-size:42px;line-height:1.1;font-weight:600;font-variant-numeric:tabular-nums}.mini{margin-left:auto;color:var(--pencil)}.mini .mark{margin-left:6px}
 .bars{display:grid;grid-template-columns:auto minmax(60px,1fr) 34px;gap:6px 12px;align-items:center}.bl{font-size:13px;color:var(--pencil);white-space:nowrap}
-.gauge{position:relative;display:block;height:10px;overflow:hidden}.gauge .track{position:absolute;left:0;right:0;top:5px;border-top:1px solid var(--axis)}
-.gauge .fill{position:absolute;left:0;top:3px;height:4px;background:var(--ink)}.gauge .fill.fail{background:var(--signal)}.gauge .fill.warn{background:var(--warn)}.gauge .fill.good{background:var(--ink)}.gauge .tick{position:absolute;top:1px;height:9px;border-left:1px solid var(--axis)}.num{text-align:right}
-.shots{display:flex;gap:12px;margin-top:14px;align-items:flex-end}.shots figure{margin:0;flex:1}.shots figure.m{flex:0 0 26%}.shots img{width:100%;display:block;border:1px solid var(--ink)}figcaption{color:var(--pencil);margin-top:4px}
-.warnline{border-left:4px solid var(--signal);background:var(--bad-bg);padding:8px 12px;margin:10px 0 0}
+.gauge{position:relative;display:block;height:8px;border-radius:4px;background:var(--plate);overflow:hidden}.gauge .track,.gauge .tick{display:none}
+.gauge .fill{position:absolute;left:0;top:0;height:8px;border-radius:4px;background:#A8A8A2}.gauge .fill.fail{background:var(--signal-text)}.gauge .fill.warn{background:#D9A441}.gauge .fill.good{background:var(--good)}.num{text-align:right;font-variant-numeric:tabular-nums}
+.shots{display:flex;gap:12px;margin-top:14px;align-items:flex-end}.shots figure{margin:0;flex:1}.shots figure.m{flex:0 0 26%}.shots img{width:100%;display:block;border:1px solid var(--line);border-radius:10px}figcaption{color:var(--pencil);margin-top:4px}
+.warnline{border-radius:10px;background:var(--bad-bg);padding:8px 12px;margin:10px 0 0}
 /* сравнение */
 .cmp-grid{display:grid;grid-template-columns:440px 1fr;gap:24px;align-items:start}.radar{margin:0}.radar svg{width:100%;height:auto;font-family:Geologica}.radar figcaption{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px}.lg{display:inline-flex;align-items:center;gap:6px}.lg svg{display:block}
-.scroll{overflow-x:auto}table.cmp{border-collapse:collapse;width:100%}table.cmp th,table.cmp td{border:1px solid var(--ink);padding:8px 10px;text-align:left}table.cmp th{font-weight:600;background:var(--plate)}
-table.cmp td.best{font-weight:600;box-shadow:inset 0 -3px 0 var(--signal)}table.cmp tr.sum td{font-weight:600;border-top:3px solid var(--ink)}
-.tag{display:inline-block;background:var(--plate);padding:1px 7px;font:400 11px "Martian Mono",monospace;color:var(--ink);white-space:nowrap}
-ul.gaps{list-style:none;padding:0;margin:0}ul.gaps li{display:flex;gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px dashed var(--axis)}
+.scroll{overflow-x:auto}table.cmp{border-collapse:separate;border-spacing:0;width:100%;border:1px solid var(--line);border-radius:12px;overflow:hidden}table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}table.cmp th{font-weight:600;background:var(--plate);color:var(--pencil);font-size:13px}
+table.cmp td.best{font-weight:600;background:var(--good-bg)}table.cmp tr.sum td{font-weight:600;background:var(--plate);border-bottom:0}
+.tag{display:inline-block;background:var(--plate);border-radius:999px;padding:1px 9px;font-size:12px;color:var(--ink);white-space:nowrap}
+ul.gaps{list-style:none;padding:0;margin:0}ul.gaps li{display:flex;gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
 /* план */
-ol.actions{padding-left:0;list-style:none;counter-reset:a;margin:0}ol.actions li{counter-increment:a;position:relative;padding:12px 0 12px 52px;border-bottom:1px dashed var(--axis)}
-ol.actions li::before{content:counter(a,decimal-leading-zero);position:absolute;left:0;top:11px;font:400 20px "Martian Mono",monospace;color:var(--ink)}ol.actions li.fail::before{color:var(--signal-text)}
+ol.actions{padding-left:0;list-style:none;counter-reset:a;margin:0}ol.actions li{counter-increment:a;position:relative;padding:12px 0 12px 48px;border-bottom:1px solid var(--line)}ol.actions li:last-child{border:0}
+ol.actions li::before{content:counter(a);position:absolute;left:0;top:12px;width:30px;height:30px;border-radius:50%;background:var(--plate);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:var(--ink)}ol.actions li.fail::before{background:var(--bad-bg);color:var(--signal-text)}
 .a-head{display:flex;gap:8px;margin-bottom:4px}.hint{color:var(--pencil);font-size:13.5px;margin-top:4px}
 /* подробно */
-details{border-top:1px solid var(--ink)}details:last-of-type{border-bottom:1px solid var(--ink)}summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;list-style:none}summary::-webkit-details-marker{display:none}
-.s-name{font-weight:600}.s-name::before{content:"+ ";font-family:"Martian Mono",monospace;color:var(--pencil)}details[open] .s-name::before{content:"− "}.s-meta{display:flex;align-items:center;gap:14px}.s-meta .stack{width:140px;margin:0}.s-score{font-size:18px;min-width:34px;text-align:right}
-ul.findings{list-style:none;padding:0;margin:0 0 12px}li.f{display:flex;gap:14px;padding:9px 0;border-top:1px solid var(--plate);align-items:baseline}li.f .chip{flex:0 0 92px;text-align:center}
+details{border-top:1px solid var(--line)}details:first-of-type{border-top:0}summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;list-style:none}summary::-webkit-details-marker{display:none}
+.s-name{font-weight:600}.s-name::before{content:"▸ ";color:var(--pencil)}details[open] .s-name::before{content:"▾ "}.s-meta{display:flex;align-items:center;gap:14px}.s-meta .stack{width:140px;margin:0}.s-score{font-size:18px;font-weight:600;min-width:34px;text-align:right}
+ul.findings{list-style:none;padding:0;margin:0 0 12px}li.f{display:flex;gap:14px;padding:9px 0;border-top:1px solid var(--plate);align-items:baseline}li.f .chip{flex:0 0 100px;text-align:center}
 li.f.ok .msg,li.f.info .msg{color:var(--pencil)}li.f.fail .msg{font-weight:600}
-.ev{color:var(--pencil);font-size:11px;margin-top:4px;word-break:break-all}.note{margin:6px 0 14px}.swatches{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}.sw{display:flex;align-items:center;gap:6px;font-size:11px}.sw i{width:22px;height:22px;border:1px solid var(--ink);display:inline-block}
-.ai{border:1px solid var(--ink);padding:16px 20px}.ai h3{border:0}
+.ev{color:var(--pencil);font-size:11.5px;margin-top:4px;word-break:break-all}.note{margin:6px 0 14px}.swatches{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}.sw{display:flex;align-items:center;gap:6px;font-size:11.5px}.sw i{width:22px;height:22px;border:1px solid var(--line);border-radius:6px;display:inline-block}
+.ai h3{border:0}
 body.only-issues li.f.ok,body.only-issues li.f.info{display:none}
-footer.stamp{display:grid;grid-template-columns:repeat(6,1fr);border-top:3px solid var(--ink)}footer.stamp div{padding:8px 12px;border-right:1px solid var(--ink)}footer.stamp div:last-child{border-right:0}footer.stamp b{display:block;font-weight:400;color:var(--pencil);font-size:11px}footer.stamp span{font-family:"Martian Mono",monospace;font-size:12px}
-@media (max-width:860px){.key-grid{grid-template-columns:1fr}.key-grid>div{border-left:0;padding:12px 0;border-top:1px solid var(--plate)}.cmp-grid{grid-template-columns:1fr}}
-@media (max-width:720px){main{padding:4px 14px 20px}header.top,.toolbar{padding:12px 14px}.s-meta .stack,.s-meta .small{display:none}li.f{flex-direction:column;gap:4px}footer.stamp{grid-template-columns:repeat(2,1fr)}footer.stamp div{border-bottom:1px solid var(--ink)}}
-@media print{.toolbar{display:none}.sheet{margin:0;border-width:2px}details{break-inside:avoid}section{break-inside:avoid-page}a{color:inherit}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+p.soon{font-size:12px;color:var(--pencil);margin:10px 0 24px;text-align:center}@media print{p.soon{display:none}}
+footer.foot{margin-top:8px;padding:14px 0;border-top:1px solid var(--line);font-size:12px;color:var(--pencil);display:flex;flex-wrap:wrap;gap:4px 16px}
+@media (max-width:860px){.key-grid{grid-template-columns:1fr}.key-grid>div{border-left:0;padding:12px 0;border-top:1px solid var(--line)}.key-grid>div:first-child{border-top:0}.cmp-grid{grid-template-columns:1fr}}
+@media (max-width:720px){.sheet{padding:0 12px}section,.key{padding:16px}.s-meta .stack,.s-meta .small{display:none}li.f{flex-direction:column;gap:4px}}
+@media print{html{background:#fff}.toolbar{display:none}.sheet{margin:0;padding:0}section,.key,.card{box-shadow:none}details{break-inside:avoid}section{break-inside:avoid-page}a{color:inherit}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body><div class="sheet">
-<header class="top">${LOGO}<div><span class="mono label">site-audit-ru · № 002</span><h1>${compare ? "Сравнение сайтов" : "Аудит сайта"}</h1></div><div class="meta mono small">${esc(date)}<br>${sites.length} ${sites.length === 1 ? "сайт" : sites.length < 5 ? "сайта" : "сайтов"}</div></header>
+<header class="top">${LOGO}<div><span class="label">site-audit-ru</span><h1>${compare ? "Сравнение сайтов" : "Аудит сайта"}</h1></div><div class="meta mono small">${esc(date)}<br>${sites.length} ${sites.length === 1 ? "сайт" : sites.length < 5 ? "сайта" : "сайтов"}</div></header>
 <div class="toolbar"><nav>${toc.map(([id, t]) => `<a href="#${id}">${t}</a>`).join("")}</nav><div class="btns"><button class="btn" id="only-issues" type="button">Только проблемы</button><button class="btn" id="dl" type="button" data-name="${esc(fileName)}">Скачать HTML</button><button class="btn" id="pr" type="button">Печать / PDF</button></div></div>
 <main>
 ${keyPanel(sites)}
@@ -360,6 +361,7 @@ ${aiHtml}
 ${diffHtml}
 ${details}
 </main>
-<footer class="stamp"><div><b>Разработчик</b><span>kozhevnikovai</span></div><div><b>Номер</b><span>№ 002</span></div><div><b>Объект</b><span>${esc(sites.map((s) => hostOf(s.url)).join(", ")).slice(0, 80)}</span></div><div><b>Дата</b><span>${esc(date)}</span></div><div><b>Версия</b><span>${esc(own?.tool.version ?? "")}</span></div><div><b>Лицензия</b><span>MIT</span></div></footer>
+<footer class="foot"><span>site-audit-ru ${esc(own?.tool.version ?? "")}</span><span>${esc(sites.map((s) => hostOf(s.url)).join(", ").slice(0, 80))}</span><span>${esc(date)}</span><span>kozhevnikovai · MIT</span></footer>
+<p class="soon">Скоро в платной версии: проверка по расписанию с уведомлениями, отчёт под брендом агентства, весь сайт целиком. <a href="https://github.com/kozhevnikovai/site-audit-ru#скоро" target="_blank" rel="noopener">Подробнее</a></p>
 </div>${SCRIPT}</body></html>`;
 }

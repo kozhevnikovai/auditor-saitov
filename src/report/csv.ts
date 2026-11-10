@@ -2,10 +2,13 @@ import type { SiteReport } from "../types.js";
 import { BLOCK_KEYS, BLOCKS, HINTS, hostOf } from "./insights.js";
 
 const LEVEL = { fail: "Ошибка", warn: "Внимание", info: "Инфо", ok: "Норма" } as const;
-const cell = (v: unknown) => {
-  const s = String(v ?? "");
+export const csvCell = (v: unknown) => {
+  let s = String(v ?? "");
+  // текст с чужого сайта, начинающийся с = + - @, Excel выполнил бы как формулу
+  if (typeof v === "string" && /^[\s]*[=+\-@\t\r]/.test(s)) s = "'" + s;
   return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
+const cell = csvCell;
 
 /** CSV для Excel и Google Таблиц: точка с запятой, UTF-8 с BOM — открывается двойным кликом в русском Excel */
 export function renderCsv(sites: SiteReport[]): string {

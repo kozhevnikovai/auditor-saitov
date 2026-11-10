@@ -37,6 +37,7 @@ function openFile(p: string) {
 
 const program = new Command()
   .name("site-audit-ru")
+  .addHelpText("after", "\nСкоро в платной версии: проверка по расписанию, отчёт под брендом агентства, весь сайт целиком.\nПодробнее и ранний доступ: https://github.com/kozhevnikovai/site-audit-ru#скоро")
   .description("Аудит сайта и конкурентов: SEO, структура и конверсия, визуальный стиль, технологии, соответствие законам РФ")
   .version(VERSION);
 
@@ -58,6 +59,7 @@ program
   .option("--timeout <ms>", "таймаут загрузки страницы", String(DEFAULTS.timeoutMs))
   .option("--ignore-robots", "не учитывать robots.txt (только для своего сайта)")
   .option("--chrome-path <path>", "путь к Chrome, Edge, Яндекс Браузеру или Chromium")
+  .option("--allow-private", "разрешить адреса локальной сети (аудит внутреннего сайта, localhost)")
   .action(async (urls: string[], o) => {
     if (urls.length > 10) throw new Error("Не больше 10 сайтов за один запуск");
     const formats = parseFormats(o.format);
@@ -69,7 +71,7 @@ program
     log(`site-audit-ru ${VERSION} · ${urls.length} ${urls.length === 1 ? "сайт" : "сайта(ов)"} · до ${o.maxPages} стр. на сайт`);
     const { reports } = await collectSites(
       urls,
-      { maxPages: Number(o.maxPages), outDir, screenshots: o.screenshots, timeoutMs: Number(o.timeout), ignoreRobots: !!o.ignoreRobots, chromePath: o.chromePath },
+      { maxPages: Number(o.maxPages), outDir, screenshots: o.screenshots, timeoutMs: Number(o.timeout), ignoreRobots: !!o.ignoreRobots, chromePath: o.chromePath, allowPrivate: o.allowPrivate ? true : undefined },
       log,
     );
 
@@ -101,7 +103,7 @@ program
 
     if (o.webhook) {
       try {
-        const status = await sendWebhook(o.webhook, webhookPayload(reports, diffs));
+        const status = await sendWebhook(o.webhook, webhookPayload(reports, diffs), { allowPrivate: o.allowPrivate ? true : undefined });
         log(`Webhook: ответ ${status}`);
       } catch (e) {
         log(`Webhook не отправлен: ${(e as Error).message}`);
