@@ -1,15 +1,17 @@
-<p align="center"><img src="docs/img/cover.png" alt="site-audit-ru — аудит сайта и конкурентов" width="100%"></p>
+<p align="center"><img src="docs/img/cover.png" alt="Аудитор сайтов — аудит сайта и конкурентов" width="100%"></p>
 
 <p align="center">
-<a href="https://github.com/kozhevnikovai/site-audit-ru/actions/workflows/ci.yml"><img src="https://github.com/kozhevnikovai/site-audit-ru/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/kozhevnikovai/site-audit-ru/releases/latest"><img src="https://img.shields.io/github/v/release/kozhevnikovai/site-audit-ru?label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F&color=161616" alt="Версия"></a>
+<a href="https://github.com/kozhevnikovai/auditor-saitov/actions/workflows/ci.yml"><img src="https://github.com/kozhevnikovai/auditor-saitov/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/kozhevnikovai/auditor-saitov/releases/latest"><img src="https://img.shields.io/github/v/release/kozhevnikovai/auditor-saitov?label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F&color=161616" alt="Версия"></a>
 <img src="https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-MIT-161616" alt="MIT">
 <img src="https://img.shields.io/badge/Claude%20Desktop%20%C2%B7%20Claude%20Code%20%C2%B7%20CLI-FF5A1F" alt="Claude Desktop, Claude Code, CLI">
 </p>
 
 <p align="center"><b>Русский</b> · <a href="README.en.md">English</a></p>
 
-# site-audit-ru — аудит сайта и конкурентов
+# Аудитор сайтов — аудит сайта и конкурентов
+
+Команда и пакет называются `site-audit-ru` — прежнее название продукта.
 
 Дайте адрес своего сайта и 2–4 конкурентов. Через пару минут получите отчёт: что мешает сайту приносить заявки, где конкуренты сильнее, что нарушает законы РФ и что исправить в первую очередь.
 
@@ -56,7 +58,7 @@ HTML-отчёт открывается в любом браузере. Его м
 
 ### 1. Claude Desktop — проще всего, без терминала
 
-1. Скачайте **`site-audit-ru.mcpb`** со страницы [последнего релиза](https://github.com/kozhevnikovai/site-audit-ru/releases/latest).
+1. Скачайте **`site-audit-ru.mcpb`** со страницы [последнего релиза](https://github.com/kozhevnikovai/auditor-saitov/releases/latest).
 2. Откройте файл двойным щелчком. Claude Desktop предложит установить расширение.
 3. Напишите в чате: *«Сравни мой сайт example.ru с конкурентами a.ru и b.ru и составь план на две недели»*.
 
@@ -65,7 +67,7 @@ Claude проверит сайты, прочитает результаты ка
 ### 2. Claude Code — плагин с командой `/site-audit`
 
 ```text
-/plugin marketplace add kozhevnikovai/site-audit-ru
+/plugin marketplace add kozhevnikovai/auditor-saitov
 /plugin install site-audit-ru@kozhevnikovai
 /site-audit example.ru a.ru b.ru
 ```
@@ -77,14 +79,14 @@ Claude проверит сайты, прочитает результаты ка
 Нужен Node.js 20 или новее.
 
 ```bash
-npm install -g https://github.com/kozhevnikovai/site-audit-ru/releases/latest/download/site-audit-ru.tgz
+npm install -g https://github.com/kozhevnikovai/auditor-saitov/releases/latest/download/site-audit-ru.tgz
 site-audit-ru example.ru a.ru b.ru --open
 ```
 
 Без установки, одной командой:
 
 ```bash
-npx -y https://github.com/kozhevnikovai/site-audit-ru/releases/latest/download/site-audit-ru.tgz example.ru a.ru
+npx -y https://github.com/kozhevnikovai/auditor-saitov/releases/latest/download/site-audit-ru.tgz example.ru a.ru
 ```
 
 ### Другие ИИ-клиенты: Cursor, Codex, Windsurf
@@ -96,7 +98,7 @@ npx -y https://github.com/kozhevnikovai/site-audit-ru/releases/latest/download/s
   "mcpServers": {
     "site-audit-ru": {
       "command": "npx",
-      "args": ["-y", "https://github.com/kozhevnikovai/site-audit-ru/releases/latest/download/site-audit-ru.tgz", "mcp"]
+      "args": ["-y", "https://github.com/kozhevnikovai/auditor-saitov/releases/latest/download/site-audit-ru.tgz", "mcp"]
     }
   }
 }
@@ -216,25 +218,27 @@ node dist/cli.js test-site.ru --open
 
 ## Скоро
 
-Всё, что есть сейчас, остаётся бесплатным и открытым (MIT). Платная версия — «site-audit-ru для агентств и отделов маркетинга» — в разработке, этих возможностей пока нет:
+Всё, что есть сейчас, остаётся бесплатным и открытым (MIT). Платная версия — «Аудитор сайтов для агентств и отделов маркетинга» — в разработке, этих возможностей пока нет:
 
 - **Проверка по расписанию** — сайт и конкуренты каждую неделю, уведомление о новых проблемах — *скоро*
 - **Отчёт под вашим брендом** — логотип и цвета агентства, PDF — *скоро*
 - **Весь сайт целиком** — больше 30 страниц, история изменений — *скоро*
 - **Командный доступ и API** — *скоро*
 
-Нужно что-то из этого? [Оставьте заявку на ранний доступ](https://github.com/kozhevnikovai/site-audit-ru/issues/new?template=early-access.yml) — заявки влияют на порядок разработки.
+Цена — от 990 ₽ в месяц. Тем, кто оставит заявку на ранний доступ, — скидка 50 % на первый год.
+
+Нужно что-то из этого? [Оставьте заявку на ранний доступ](https://github.com/kozhevnikovai/auditor-saitov/issues/new?template=early-access.yml) — заявки влияют на порядок разработки.
 
 ## Другие инструменты kozhevnikovai
 
 - [Протоколист](https://github.com/kozhevnikovai/protokolist) — запись встречи → протокол, локально
 - [Тендерный помощник](https://github.com/kozhevnikovai/tender-pomoshnik) — разбор госзакупок 44-ФЗ и 223-ФЗ с цитатами
-- [ai-skills-ru-business](https://github.com/kozhevnikovai/ai-skills-ru-business) — 10 навыков для Claude: КП, отзывы, вакансии, регламенты
+- [Бизнес-навыки](https://github.com/kozhevnikovai/biznes-navyki) — 10 навыков для Claude: КП, отзывы, вакансии, регламенты
 
 Об уязвимостях — приватно, см. [SECURITY.md](SECURITY.md).
 
 ## Автор
 
-Егор Кожевников — [github.com/kozhevnikovai](https://github.com/kozhevnikovai). Продукт № 002 линейки kozhevnikovai; № 001 — [ИИ-навыки для бизнеса в России](https://github.com/kozhevnikovai/ai-skills-ru-business).
+Егор Кожевников — [github.com/kozhevnikovai](https://github.com/kozhevnikovai). Продукт № 002 линейки kozhevnikovai; № 001 — [ИИ-навыки для бизнеса в России](https://github.com/kozhevnikovai/biznes-navyki).
 
 Лицензия MIT.

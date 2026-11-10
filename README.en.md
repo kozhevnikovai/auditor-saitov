@@ -1,8 +1,10 @@
-<p align="center"><img src="docs/img/cover.png" alt="site-audit-ru" width="100%"></p>
+<p align="center"><img src="docs/img/cover.png" alt="Auditor Saitov" width="100%"></p>
 
 <p align="center"><a href="README.md">Русский</a> · <b>English</b></p>
 
-# site-audit-ru — website & competitor audit (Russia-focused)
+# Auditor Saitov (Аудитор сайтов) — website & competitor audit (Russia-focused)
+
+The command and package are still called `site-audit-ru`, the former product name.
 
 Give it your site and 2–4 competitors — in a couple of minutes you get a report: what keeps the site from generating leads, where competitors are stronger, what breaks Russian law, and what to fix first.
 
@@ -29,16 +31,16 @@ Give it your site and 2–4 competitors — in a couple of minutes you get a rep
 
 Requires Google Chrome, Microsoft Edge, Yandex Browser or Chromium.
 
-1. **Claude Desktop (no terminal):** download `site-audit-ru.mcpb` from the [latest release](https://github.com/kozhevnikovai/site-audit-ru/releases/latest), double-click, then ask Claude: *“Compare my site example.ru with a.ru and b.ru”*.
+1. **Claude Desktop (no terminal):** download `site-audit-ru.mcpb` from the [latest release](https://github.com/kozhevnikovai/auditor-saitov/releases/latest), double-click, then ask Claude: *“Compare my site example.ru with a.ru and b.ru”*.
 2. **Claude Code plugin:**
    ```text
-   /plugin marketplace add kozhevnikovai/site-audit-ru
+   /plugin marketplace add kozhevnikovai/auditor-saitov
    /plugin install site-audit-ru@kozhevnikovai
    /site-audit example.ru a.ru b.ru
    ```
 3. **CLI (Node.js 20+):**
    ```bash
-   npm install -g https://github.com/kozhevnikovai/site-audit-ru/releases/latest/download/site-audit-ru.tgz
+   npm install -g https://github.com/kozhevnikovai/auditor-saitov/releases/latest/download/site-audit-ru.tgz
    site-audit-ru example.ru a.ru b.ru --open
    ```
 4. **Any MCP client** (Cursor, Codex, Windsurf): command `npx -y <tarball-url> mcp`; tools `audit_sites`, `get_details`; prompt `site_audit_expert`.
