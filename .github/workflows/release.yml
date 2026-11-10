@@ -25,7 +25,7 @@ jobs:
       - run: npm test
       - run: npm pack && mv site-audit-ru-*.tgz site-audit-ru.tgz
       - run: node scripts/build-mcpb.mjs
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             site-audit-ru.tgz
