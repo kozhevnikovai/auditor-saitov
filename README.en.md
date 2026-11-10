@@ -21,7 +21,7 @@ Give it your site and 2–4 competitors — in a couple of minutes you get a rep
 
 ## Output
 
-`report.html` (Blueprint-style report with key panel, radar, action plan, filters, download and print), `report.md`, `findings.csv` / `summary.csv` (Excel-ready: UTF-8 BOM, `;`), `audit.json`.
+`report.html` (report with key panel, radar, action plan, filters, download and print), `report.md`, `findings.csv` / `summary.csv` (Excel-ready: UTF-8 BOM, `;`), `audit.json`.
 
 <p align="center"><img src="docs/img/report-compare.jpg" alt="Report" width="100%"></p>
 
