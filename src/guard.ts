@@ -3,6 +3,8 @@
 // внутренним сервисам компании или облачным метаданным (169.254.169.254).
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
+import { fetch as ufetch } from "undici";
+import { guardedAgent } from "./egress.js";
 
 /** Адрес из частной, служебной или зарезервированной сети */
 export function isPrivateIp(ip: string): boolean {
@@ -69,9 +71,10 @@ export async function safeGetText(url: string, o: { timeoutMs: number; userAgent
   let cur = url;
   for (let i = 0; i <= LIMITS.redirects; i++) {
     try { await assertPublicUrl(cur, o.allowPrivate); } catch { return { status: 0, text: "", url: cur }; }
-    let r: Response;
+    let r: Awaited<ReturnType<typeof ufetch>>;
     try {
-      r = await fetch(cur, { redirect: "manual", headers: { "user-agent": o.userAgent, accept: "text/plain,application/xml,text/xml,*/*" }, signal: AbortSignal.timeout(o.timeoutMs) });
+      // адрес проверяется ещё раз в момент соединения (защита от DNS rebinding)
+      r = await ufetch(cur, { dispatcher: guardedAgent(!!o.allowPrivate || process.env.SITE_AUDIT_ALLOW_PRIVATE === "1"), redirect: "manual", headers: { "user-agent": o.userAgent, accept: "text/plain,application/xml,text/xml,*/*" }, signal: AbortSignal.timeout(o.timeoutMs) });
     } catch {
       return { status: 0, text: "", url: cur };
     }

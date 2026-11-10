@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { Browser, BrowserContext } from "playwright-core";
 import type { CollectOptions, PageData, SiteRaw } from "./types.js";
 import { assertPublicUrl, isPublicHost, LIMITS, safeGetText, sameSite } from "./guard.js";
+import { startEgressProxy } from "./egress.js";
 import { extractGlobals, extractPage, extractPerf, extractVisual, mobileOverflow, PERF_INIT } from "./extract.js";
 
 /** Служебные страницы: вход, корзина, личный кабинет — их не оцениваем */
@@ -35,11 +36,21 @@ async function fetchText(ctx: BrowserContext, url: string, opt: CollectOptions):
 }
 
 export async function crawl(browser: Browser, startUrl: string, opt: CollectOptions): Promise<SiteRaw> {
+  // весь трафик браузера — через локальный прокси, который соединяется только с проверенным IP
+  const proxy = await startEgressProxy({ allowPrivate: !!opt.allowPrivate });
+  try {
+    return await crawlVia(browser, startUrl, opt, proxy.url);
+  } finally {
+    await proxy.close();
+  }
+}
+
+async function crawlVia(browser: Browser, startUrl: string, opt: CollectOptions, proxyUrl: string): Promise<SiteRaw> {
   const start = normalizeUrl(startUrl.includes("://") ? startUrl : "https://" + startUrl);
   await assertPublicUrl(start, opt.allowPrivate);
   let origin = new URL(start).origin;
   // чужой сайт ничего не скачивает на диск и не ставит фоновые скрипты (service worker)
-  const ctx = await browser.newContext({ userAgent: opt.userAgent, viewport: { width: 1440, height: 900 }, locale: "ru-RU", ignoreHTTPSErrors: true, acceptDownloads: false, serviceWorkers: "block" });
+  const ctx = await browser.newContext({ userAgent: opt.userAgent, viewport: { width: 1440, height: 900 }, locale: "ru-RU", ignoreHTTPSErrors: true, acceptDownloads: false, serviceWorkers: "block", proxy: { server: proxyUrl, bypass: "<-loopback>" } });
   ctx.setDefaultTimeout(opt.timeoutMs);
   // любой запрос браузера (страницы, редиректы, скрипты, картинки) — только на публичные адреса
   if (!opt.allowPrivate) {

@@ -1,3 +1,5 @@
+import { fetch as ufetch } from "undici";
+import { guardedAgent } from "../egress.js";
 import { assertPublicUrl } from "../guard.js";
 import type { SiteReport } from "../types.js";
 import { BLOCK_KEYS, hostOf, topActions, type Diff } from "./insights.js";
@@ -26,6 +28,6 @@ export async function sendWebhook(url: string, payload: unknown, o: { allowPriva
   const allow = o.allowPrivate ?? process.env.SITE_AUDIT_ALLOW_PRIVATE === "1";
   const u = await assertPublicUrl(url, allow);
   if (u.protocol !== "https:" && !allow) throw new Error("Webhook должен начинаться с https://");
-  const r = await fetch(u, { method: "POST", redirect: "manual", headers: { "content-type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20_000) });
+  const r = await ufetch(u, { dispatcher: guardedAgent(allow), method: "POST", redirect: "manual", headers: { "content-type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20_000) });
   return r.status;
 }
