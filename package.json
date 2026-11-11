@@ -42,7 +42,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kozhevnikovai/site-audit-ru.git"
+    "url": "git+https://github.com/kozhevnikovai/auditor-saitov.git"
   },
   "dependencies": {
     "@fontsource/geologica": "^5.3.0",

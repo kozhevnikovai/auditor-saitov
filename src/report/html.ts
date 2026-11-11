@@ -350,7 +350,7 @@ footer.foot{margin-top:8px;padding:14px 0;border-top:1px solid var(--line);font-
 @media (max-width:720px){.sheet{padding:0 12px}section,.key{padding:16px}.s-meta .stack,.s-meta .small{display:none}li.f{flex-direction:column;gap:4px}}
 @media print{html{background:#fff}.toolbar{display:none}.sheet{margin:0;padding:0}section,.key,.card{box-shadow:none}details{break-inside:avoid}section{break-inside:avoid-page}a{color:inherit}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body><div class="sheet">
-<header class="top">${LOGO}<div><span class="label">site-audit-ru</span><h1>${compare ? "Сравнение сайтов" : "Аудит сайта"}</h1></div><div class="meta mono small">${esc(date)}<br>${sites.length} ${sites.length === 1 ? "сайт" : sites.length < 5 ? "сайта" : "сайтов"}</div></header>
+<header class="top">${LOGO}<div><span class="label">Аудитор сайтов</span><h1>${compare ? "Сравнение сайтов" : "Аудит сайта"}</h1></div><div class="meta mono small">${esc(date)}<br>${sites.length} ${sites.length === 1 ? "сайт" : sites.length < 5 ? "сайта" : "сайтов"}</div></header>
 <div class="toolbar"><nav>${toc.map(([id, t]) => `<a href="#${id}">${t}</a>`).join("")}</nav><div class="btns"><button class="btn" id="only-issues" type="button">Только проблемы</button><button class="btn" id="dl" type="button" data-name="${esc(fileName)}">Скачать HTML</button><button class="btn" id="pr" type="button">Печать / PDF</button></div></div>
 <main>
 ${keyPanel(sites)}
@@ -361,7 +361,7 @@ ${aiHtml}
 ${diffHtml}
 ${details}
 </main>
-<footer class="foot"><span>site-audit-ru ${esc(own?.tool.version ?? "")}</span><span>${esc(sites.map((s) => hostOf(s.url)).join(", ").slice(0, 80))}</span><span>${esc(date)}</span><span>kozhevnikovai · MIT</span></footer>
-<p class="soon">Скоро в платной версии: проверка по расписанию с уведомлениями, отчёт под брендом агентства, весь сайт целиком. <a href="https://github.com/kozhevnikovai/site-audit-ru#скоро" target="_blank" rel="noopener">Подробнее</a></p>
+<footer class="foot"><span>Аудитор сайтов ${esc(own?.tool.version ?? "")}</span><span>${esc(sites.map((s) => hostOf(s.url)).join(", ").slice(0, 80))}</span><span>${esc(date)}</span><span>kozhevnikovai · MIT</span></footer>
+<p class="soon">Скоро в платной версии: проверка по расписанию с уведомлениями, отчёт под брендом агентства, весь сайт целиком. <a href="https://github.com/kozhevnikovai/auditor-saitov#скоро" target="_blank" rel="noopener">Подробнее</a></p>
 </div>${SCRIPT}</body></html>`;
 }

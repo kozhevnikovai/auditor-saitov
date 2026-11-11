@@ -20,8 +20,8 @@ const plugin = {
   version: pkg.version,
   description: "Аудит сайта и конкурентов: SEO, структура и конверсия, визуальный стиль, технологии, соответствие законам РФ. Команда /site-audit и пять ИИ-экспертов.",
   author: { name: "Egor Kozhevnikov", url: "https://github.com/kozhevnikovai" },
-  homepage: "https://github.com/kozhevnikovai/site-audit-ru",
-  repository: "https://github.com/kozhevnikovai/site-audit-ru",
+  homepage: "https://github.com/kozhevnikovai/auditor-saitov",
+  repository: "https://github.com/kozhevnikovai/auditor-saitov",
   license: "MIT",
   keywords: ["seo", "audit", "competitors", "152-fz", "russian"],
 };
