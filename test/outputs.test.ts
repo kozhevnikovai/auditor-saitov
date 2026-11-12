@@ -117,7 +117,8 @@ describe("интеграции", () => {
 
 describe("MCP-сервер", () => {
   it("отдаёт инструменты и проводит аудит через audit_sites", async () => {
-    execFileSync("npx", ["tsc", "-p", "."], { cwd: join(import.meta.dirname, "..") });
+    // tsc запускаем через node: на Windows npx — это .cmd и без оболочки не запускается
+    execFileSync(process.execPath, [join(import.meta.dirname, "..", "node_modules", "typescript", "bin", "tsc"), "-p", "."], { cwd: join(import.meta.dirname, "..") });
     const client = new Client({ name: "test", version: "1.0.0" });
     await client.connect(new StdioClientTransport({ command: "node", args: [join(import.meta.dirname, "..", "dist", "cli.js"), "mcp"], env: { ...process.env } as Record<string, string> }));
     const tools = await client.listTools();
