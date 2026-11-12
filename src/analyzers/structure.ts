@@ -46,6 +46,24 @@ export function analyzeStructure(raw: SiteRaw): BlockResult {
   const fieldsCount = formPages.flatMap((p) => p.forms.filter((x) => x.personalFields).map((x) => x.fields.length));
   if (fieldsCount.some((n) => n > 6)) out.push(f("structure.form-long", "warn", "Есть формы больше 6 полей — каждое лишнее поле снижает конверсию"));
 
+  // Доступность форм и удобство на телефоне
+  const pf = formPages.flatMap((p) => p.forms.filter((x) => x.personalFields).map((x) => ({ url: p.url, x })));
+  const allFields = pf.flatMap(({ url, x }) => x.fields.filter((y) => y.labelled !== undefined).map((y) => ({ url, ...y })));
+  if (allFields.length) {
+    const noLabel = allFields.filter((y) => !y.labelled);
+    out.push(noLabel.length ? f("structure.labels", "warn", `${noLabel.length} полей форм без подписи (только placeholder) — подсказка исчезает при вводе, экранные дикторы поле не озвучат`, [...new Set(noLabel.map((y) => `${y.name || y.type} — ${y.url}`))].slice(0, 10)) : f("structure.labels", "ok", "У всех полей форм есть подписи"));
+    const contact = allFields.filter((y) => y.type === "tel" || y.type === "email" || /phone|tel|mail|телефон/i.test(y.name));
+    const wrongType = contact.filter((y) => y.type === "text" && /phone|tel|телефон/i.test(y.name));
+    if (wrongType.length) out.push(f("structure.tel-type", "warn", `Поле телефона с type="text" — на телефоне откроется буквенная клавиатура`, [...new Set(wrongType.map((y) => y.url))]));
+    const noAuto = contact.filter((y) => !y.autocomplete || y.autocomplete === "off");
+    if (contact.length && noAuto.length) out.push(f("structure.autocomplete", "info", `${noAuto.length} из ${contact.length} полей телефона и почты без autocomplete — браузер не подставит данные`));
+  }
+  const mu = home.mobileUsability;
+  if (mu) {
+    if (mu.inputs) out.push(mu.smallInputs ? f("structure.input-font", "warn", `${mu.smallInputs} полей ввода с шрифтом меньше 16 px — iPhone приближает страницу при нажатии`) : f("structure.input-font", "ok", "Поля ввода на телефоне без автоприближения (шрифт ≥ 16 px)"));
+    if (mu.targets) out.push(mu.smallTargets > 3 ? f("structure.tap-targets", "warn", `${mu.smallTargets} кнопок и ссылок меньше 32×32 px на телефоне — легко промахнуться`, mu.smallTargetExamples) : f("structure.tap-targets", "ok", "Кнопки и ссылки на телефоне достаточного размера"));
+  }
+
   const phones = [...new Set(P.flatMap((p) => p.contacts.phones))];
   const emails = [...new Set(P.flatMap((p) => p.contacts.emails))];
   const msg = [...new Set(P.flatMap((p) => p.contacts.messengers))];

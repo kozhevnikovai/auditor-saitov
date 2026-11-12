@@ -78,7 +78,9 @@ export function extractPage() {
     const fields = Array.from(form.querySelectorAll("input, textarea, select"))
       .map((i) => {
         const el = i as HTMLInputElement;
-        return { type: (el.type || el.tagName).toLowerCase(), name: el.name || el.placeholder || "", required: el.required };
+        const id = el.id;
+        const labelled = !!(el.closest("label") || (id && form.ownerDocument.querySelector(`label[for="${CSS.escape(id)}"]`)) || el.getAttribute("aria-label") || el.getAttribute("aria-labelledby") || el.title);
+        return { type: (el.type || el.tagName).toLowerCase(), name: el.name || el.placeholder || "", required: el.required, labelled, autocomplete: (el.getAttribute("autocomplete") || "").toLowerCase() };
       })
       .filter((x) => !["hidden", "submit", "button"].includes(x.type));
     const ctx = context(form);
@@ -229,23 +231,63 @@ export function extractGlobals() {
 }
 
 export const PERF_INIT = `
-  window.__sa = { lcp: null, cls: 0 };
+  window.__sa = { lcp: null, cls: 0, tbt: 0, longest: 0, longTasks: 0 };
   try {
     new PerformanceObserver((l) => { const e = l.getEntries(); const last = e[e.length - 1]; if (last) window.__sa.lcp = last.startTime; }).observe({ type: 'largest-contentful-paint', buffered: true });
     new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__sa.cls += e.value; }).observe({ type: 'layout-shift', buffered: true });
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) { window.__sa.longTasks++; window.__sa.tbt += Math.max(0, e.duration - 50); window.__sa.longest = Math.max(window.__sa.longest, e.duration); } }).observe({ type: 'longtask', buffered: true });
   } catch (e) {}
 `;
 
 export function extractPerf() {
   const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-  const sa = (window as unknown as { __sa?: { lcp: number | null; cls: number } }).__sa;
+  const sa = (window as unknown as { __sa?: { lcp: number | null; cls: number; tbt: number; longest: number; longTasks: number } }).__sa;
+  const imgs = Array.from(document.images);
+  const fold = window.innerHeight;
+  const ext = (u: string) => (u.split("?")[0].match(/\.([a-z0-9]{3,4})$/i)?.[1] ?? "").toLowerCase();
+  let modern = 0, legacy = 0, belowNoLazy = 0, oversized = 0, noSize = 0;
+  for (const im of imgs) {
+    const src = im.currentSrc || im.src;
+    if (!src || src.startsWith("data:")) continue;
+    const e = ext(src);
+    if (e === "webp" || e === "avif") modern++;
+    else if (e === "jpg" || e === "jpeg" || e === "png") legacy++;
+    const top = im.getBoundingClientRect().top + window.scrollY;
+    if (top > fold * 1.5 && im.loading !== "lazy") belowNoLazy++;
+    if (im.clientWidth > 0 && im.naturalWidth > im.clientWidth * 2.5 && im.naturalWidth > 800) oversized++;
+    if (!im.getAttribute("width") && !im.getAttribute("height") && !im.style.aspectRatio) noSize++;
+  }
   return {
     ttfbMs: nav ? Math.round(nav.responseStart - nav.startTime) : 0,
     domContentLoadedMs: nav ? Math.round(nav.domContentLoadedEventEnd - nav.startTime) : 0,
     loadMs: nav ? Math.round(nav.loadEventEnd - nav.startTime) : 0,
     lcpMs: sa?.lcp != null ? Math.round(sa.lcp) : null,
     cls: sa ? Math.round(sa.cls * 1000) / 1000 : null,
+    tbtMs: sa ? Math.round(sa.tbt) : null,
+    longestTaskMs: sa ? Math.round(sa.longest) : null,
+    longTasks: sa ? sa.longTasks : null,
+    images: { modern, legacy, belowFoldNoLazy: belowNoLazy, oversized, noSize },
+    renderBlocking: Array.from(document.querySelectorAll('head script[src]:not([async]):not([defer]):not([type="module"])')).length,
   };
+}
+
+/** Удобство на телефоне: мелкие поля ввода (iOS приближает страницу) и маленькие кнопки */
+export function mobileUsability() {
+  const visible = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    const st = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && st.visibility !== "hidden" && st.display !== "none";
+  };
+  const inputs = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]), textarea, select')).filter(visible);
+  const smallInputs = inputs.filter((i) => parseFloat(getComputedStyle(i).fontSize) < 16).length;
+  const targets = Array.from(document.querySelectorAll('a[href], button, input[type="submit"], [role="button"]')).filter(visible);
+  const small: string[] = [];
+  for (const t of targets) {
+    const r = t.getBoundingClientRect();
+    if (r.top > window.innerHeight * 3) continue;
+    if ((r.width < 32 || r.height < 32) && (t.textContent || "").trim().length <= 40 && !t.closest("p, li p, td")) small.push(((t.textContent || (t as HTMLElement).getAttribute("aria-label") || "").trim() || t.tagName.toLowerCase()).slice(0, 40));
+  }
+  return { inputs: inputs.length, smallInputs, targets: targets.length, smallTargets: small.length, smallTargetExamples: small.slice(0, 8) };
 }
 
 export function mobileOverflow() {

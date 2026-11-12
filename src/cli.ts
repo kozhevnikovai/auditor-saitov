@@ -48,7 +48,7 @@ program
   .argument("<urls...>", "адреса сайтов: ваш первым, затем конкуренты (до 10)")
   .option("-p, --max-pages <n>", "сколько страниц обойти на каждом сайте", String(DEFAULTS.maxPages))
   .option("-o, --out <dir>", "папка для отчётов (по умолчанию site-audit/<дата>-<сайт>)")
-  .option("-f, --format <list>", "форматы через запятую: html, md, csv, json", "html,md,csv")
+  .option("-f, --format <list>", "форматы через запятую: html, md, csv, xlsx, json", "html,md,csv")
   .option("--baseline <audit.json>", "сравнить с прошлым прогоном: что исправлено и что появилось")
   .option("--compare-last", "автоматически сравнить с последним прогоном этого сайта в папке site-audit")
   .option("--ai", "добавить заключение ИИ-экспертов (ключ в ANTHROPIC_API_KEY или OPENAI_API_KEY)")
@@ -117,7 +117,7 @@ program
   .description("Пересобрать отчёты из сохранённого audit.json (например, в другом формате)")
   .argument("<audit.json>")
   .option("-o, --out <dir>", "папка для отчётов (по умолчанию рядом с audit.json)")
-  .option("-f, --format <list>", "форматы: html, md, csv, json", "html,md,csv")
+  .option("-f, --format <list>", "форматы: html, md, csv, xlsx, json", "html,md,csv")
   .option("--baseline <audit.json>", "сравнить с прошлым прогоном")
   .action((path: string, o) => {
     const sites = loadReports(path);

@@ -71,6 +71,28 @@ describe("технологии", () => {
   });
 });
 
+describe("1.2: сервисы, скорость, доступность", () => {
+  it("определяет новые российские сервисы", () => {
+    const names = (bad.blocks.tech.data.detected as { name: string }[]).map((d) => d.name);
+    expect(names).toContain("Битрикс24 (онлайн-чат)");
+  });
+  it("меряет блокировку потока и вес по типам", () => {
+    const pf = good.blocks.seo.data.perf as { tbtMs: number | null; assets: { bytes: { js: number } } };
+    expect(typeof pf.tbtMs).toBe("number");
+    expect(pf.assets.bytes).toBeDefined();
+    expect(lvl(good, "seo", "seo.tbt")).toBe("ok");
+  });
+  it("поля без подписи и поле телефона type=text", () => {
+    expect(lvl(bad, "structure", "structure.labels")).toBe("warn");
+    expect(lvl(bad, "structure", "structure.tel-type")).toBe("warn");
+    expect(lvl(good, "structure", "structure.labels")).toBe("ok");
+  });
+  it("мелкий шрифт полей на телефоне", () => {
+    expect(lvl(bad, "structure", "structure.input-font")).toBe("warn");
+    expect(lvl(good, "structure", "structure.input-font")).toBe("ok");
+  });
+});
+
 describe("законы РФ", () => {
   it("хороший сайт проходит основные проверки", () => {
     for (const id of ["law.policy", "law.consent", "law.consent-doc", "law.cookie-banner", "law.requisites", "law.foreign"]) expect(lvl(good, "compliance", id), id).toBe("ok");
