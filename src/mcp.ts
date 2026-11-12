@@ -40,7 +40,7 @@ export function buildServer(): McpServer {
       inputSchema: {
         urls: z.array(z.string()).min(1).max(5).describe("Адреса сайтов: свой первым, затем конкуренты"),
         max_pages: z.number().int().min(1).max(50).default(12).describe("Сколько страниц обойти на каждом сайте (по умолчанию 12)"),
-        formats: z.string().default("html,md,csv").describe("Форматы отчётов через запятую: html, md, csv, json"),
+        formats: z.string().default("html,md,csv").describe("Форматы отчётов через запятую: html, md, csv, xlsx, json"),
         out_dir: z.string().optional().describe("Папка для отчётов (по умолчанию ~/site-audit/<дата>-<сайт>)"),
       },
     },

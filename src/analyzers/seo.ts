@@ -57,6 +57,25 @@ export function analyzeSeo(raw: SiteRaw): BlockResult {
     if (pf.lcpMs != null) out.push(pf.lcpMs <= 2500 ? f("seo.lcp", "ok", `LCP ${pf.lcpMs} мс`) : f("seo.lcp", pf.lcpMs > 4000 ? "fail" : "warn", `Главный блок грузится долго: LCP ${pf.lcpMs} мс (норма ≤ 2500)`));
     if (pf.cls != null) out.push(pf.cls <= 0.1 ? f("seo.cls", "ok", `Вёрстка стабильна: CLS ${pf.cls}`) : f("seo.cls", pf.cls > 0.25 ? "fail" : "warn", `Вёрстка «прыгает» при загрузке: CLS ${pf.cls} (норма ≤ 0,1)`));
     const mb = Math.round((pf.transferBytes / 1048576) * 10) / 10;
+    if (pf.tbtMs != null) out.push(pf.tbtMs <= 200 ? f("seo.tbt", "ok", `Страница отзывчивая: блокировка ${pf.tbtMs} мс (TBT)`) : f("seo.tbt", pf.tbtMs > 600 ? "fail" : "warn", `Скрипты подвешивают страницу: блокировка ${pf.tbtMs} мс, самая долгая задача ${pf.longestTaskMs} мс (норма TBT ≤ 200) — кнопки и меню откликаются с задержкой`));
+    if (pf.renderBlocking) out.push(f("seo.render-blocking", pf.renderBlocking > 2 ? "warn" : "info", `Синхронных скриптов в <head>: ${pf.renderBlocking} — задерживают первый показ`));
+    const im = pf.images;
+    if (im) {
+      if (im.legacy >= 3 && im.modern === 0) out.push(f("seo.img-format", "warn", `Изображения только в JPG/PNG (${im.legacy} шт.) — WebP/AVIF легче в 1,5–3 раза`));
+      else if (im.legacy + im.modern >= 3) out.push(f("seo.img-format", "ok", `Современные форматы изображений: ${im.modern} из ${im.legacy + im.modern}`));
+      if (im.belowFoldNoLazy >= 3) out.push(f("seo.lazy", "warn", `${im.belowFoldNoLazy} изображений ниже первого экрана грузятся сразу (нет loading="lazy")`));
+      if (im.oversized) out.push(f("seo.img-oversized", "warn", `${im.oversized} изображений намного больше, чем показываются на экране`));
+      if (im.noSize >= 3) out.push(f("seo.img-size", "info", `${im.noSize} изображений без width/height — вёрстка может сдвигаться`));
+    }
+    const a = pf.assets;
+    if (a) {
+      const kb = (n: number) => Math.round(n / 1024);
+      out.push(f("seo.assets", "info", `Вес по типам: JS ${kb(a.bytes.js)} КБ, CSS ${kb(a.bytes.css)} КБ, изображения ${kb(a.bytes.img)} КБ, шрифты ${kb(a.bytes.font)} КБ; сторонние скрипты ${kb(a.thirdPartyJsBytes)} КБ`));
+      if (a.bytes.js > 1_048_576) out.push(f("seo.js-heavy", "warn", `Много JavaScript: ${kb(a.bytes.js)} КБ на главной`));
+      if (a.uncompressed.length) out.push(f("seo.compression", "warn", `Без сжатия gzip/brotli: ${a.uncompressed.length} файлов`, a.uncompressed));
+      if (a.noCache.length >= 3) out.push(f("seo.cache", "warn", `Статика без кэширования в браузере: ${a.noCache.length} файлов`, a.noCache));
+      if (a.broken.length) out.push(f("seo.broken-assets", "warn", `Ресурсы с ошибкой: ${a.broken.length}`, a.broken));
+    }
     if (pf.transferBytes) out.push(mb <= 3 ? f("seo.weight", "ok", `Вес главной ${mb} МБ, ${pf.requests} запросов`) : f("seo.weight", "warn", `Тяжёлая главная: ${mb} МБ, ${pf.requests} запросов`));
   }
 

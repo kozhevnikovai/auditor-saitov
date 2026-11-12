@@ -8,7 +8,7 @@ The command and package are still called `site-audit-ru`, the former product nam
 
 Give it your site and 2–4 competitors — in a couple of minutes you get a report: what keeps the site from generating leads, where competitors are stronger, what breaks Russian law, and what to fix first.
 
-**Five blocks, 60+ checks:** SEO & speed · structure & conversion path · visual style · tech & marketing stack · Russian legal compliance (152-FZ personal data law, cookies, seller requisites, ad labelling).
+**Five blocks, 75+ checks:** SEO & speed · structure & conversion path · visual style · tech & marketing stack · Russian legal compliance (152-FZ personal data law, cookies, seller requisites, ad labelling).
 
 <p align="center"><img src="docs/img/demo.gif" alt="Demo" width="100%"></p>
 

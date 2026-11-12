@@ -4,9 +4,10 @@ import type { SiteReport } from "./types.js";
 import { renderHtml } from "./report/html.js";
 import { renderMarkdown } from "./report/md.js";
 import { renderCsv, renderSummaryCsv } from "./report/csv.js";
+import { renderXlsx } from "./report/xlsx.js";
 import { diffReports, type Diff } from "./report/insights.js";
 
-export const FORMATS = ["html", "md", "csv", "json"] as const;
+export const FORMATS = ["html", "md", "csv", "xlsx", "json"] as const;
 export type Format = (typeof FORMATS)[number];
 
 export function parseFormats(s: string): Format[] {
@@ -34,7 +35,7 @@ export function writeOutputs(sites: SiteReport[], o: WriteOptions): { files: Rec
   mkdirSync(o.outDir, { recursive: true });
   const diffs = o.baseline && existsSync(o.baseline) ? diffReports(loadReports(o.baseline), sites) : [];
   const files: Record<string, string> = {};
-  const put = (name: string, content: string) => {
+  const put = (name: string, content: string | Buffer) => {
     const p = resolve(join(o.outDir, name));
     writeFileSync(p, content);
     return p;
@@ -47,5 +48,6 @@ export function writeOutputs(sites: SiteReport[], o: WriteOptions): { files: Rec
     files.csv = put("findings.csv", renderCsv(sites));
     files.summaryCsv = put("summary.csv", renderSummaryCsv(sites));
   }
+  if (o.formats.includes("xlsx")) files.xlsx = put("report.xlsx", renderXlsx(sites));
   return { files, diffs };
 }

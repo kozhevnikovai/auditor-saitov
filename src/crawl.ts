@@ -6,7 +6,8 @@ import type { Browser, BrowserContext } from "playwright-core";
 import type { CollectOptions, PageData, SiteRaw } from "./types.js";
 import { assertPublicUrl, isPublicHost, LIMITS, safeGetText, sameSite } from "./guard.js";
 import { startEgressProxy } from "./egress.js";
-import { extractGlobals, extractPage, extractPerf, extractVisual, mobileOverflow, PERF_INIT } from "./extract.js";
+import { summarizeAssets, type ResourceInfo } from "./assets.js";
+import { extractGlobals, extractPage, extractPerf, extractVisual, mobileOverflow, mobileUsability, PERF_INIT } from "./extract.js";
 
 /** Служебные страницы: вход, корзина, личный кабинет — их не оцениваем */
 export const SKIP_PATH = /\/(login|logout|signin|sign-in|signup|sign-up|register|registration|auth|oauth|account|cabinet|lk|profile|cart|basket|korzina|checkout|order\/|wishlist|compare|search|cms\/system|wp-admin|wp-login|bitrix\/admin)(\/|\?|$|\.)/i;
@@ -150,9 +151,21 @@ async function crawlVia(browser: Browser, startUrl: string, opt: CollectOptions,
         /* data: и т.п. */
       }
     });
+    const res: ResourceInfo[] = [];
     page.on("response", async (r) => {
-      const len = Number(r.headers()["content-length"] ?? 0);
-      transfer += Number.isFinite(len) ? len : 0;
+      const h = r.headers();
+      const len = Number(h["content-length"] ?? 0);
+      const bytes = Number.isFinite(len) ? len : 0;
+      transfer += bytes;
+      if (res.length < 2000) {
+        let host = "";
+        try {
+          host = new URL(r.url()).hostname;
+        } catch {
+          /* data: */
+        }
+        res.push({ url: r.url().slice(0, 300), host, type: r.request().resourceType(), bytes, encoding: (h["content-encoding"] ?? "").toLowerCase(), cache: (h["cache-control"] ?? "").toLowerCase(), status: r.status() });
+      }
     });
     try {
       let lastNav = Date.now();
@@ -201,7 +214,7 @@ async function crawlVia(browser: Browser, startUrl: string, opt: CollectOptions,
       }
       const data = await ev(extractPage);
       const perf = await ev(extractPerf);
-      const pd: PageData = { url: finalUrl, status: resp?.status() ?? 0, depth: sitemapOnly.has(url) ? -1 : depth, ...data, perf: { ...perf, transferBytes: transfer, requests } };
+      const pd: PageData = { url: finalUrl, status: resp?.status() ?? 0, depth: sitemapOnly.has(url) ? -1 : depth, ...data, perf: { ...perf, transferBytes: transfer, requests, assets: summarizeAssets(res, new URL(origin).hostname) } };
 
       if (raw.pages.length === 0) {
         raw.cookiesOnLoad = (await ctx.cookies()).map((c) => ({ name: c.name, domain: c.domain, thirdParty: !new URL(origin).hostname.endsWith(c.domain.replace(/^\./, "")) }));
@@ -216,6 +229,7 @@ async function crawlVia(browser: Browser, startUrl: string, opt: CollectOptions,
         await page.setViewportSize({ width: 390, height: 844 });
         await page.waitForTimeout(400);
         pd.horizontalOverflowMobile = await page.evaluate(mobileOverflow);
+        pd.mobileUsability = await page.evaluate(mobileUsability).catch(() => undefined);
         if (opt.screenshots) {
           const m = join(opt.outDir, `${slug}-mobile.jpg`);
           await page.screenshot({ path: m, fullPage: false, type: "jpeg", quality: 72 });

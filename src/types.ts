@@ -19,7 +19,7 @@ export interface BlockResult {
 
 export interface FormInfo {
   action: string;
-  fields: { type: string; name: string; required: boolean }[];
+  fields: { type: string; name: string; required: boolean; labelled?: boolean; autocomplete?: string }[];
   personalFields: boolean;
   consentText: boolean;
   consentCheckbox: boolean;
@@ -58,6 +58,7 @@ export interface PageData {
   cookieBanner: boolean;
   eridLinks: string[];
   horizontalOverflowMobile?: boolean;
+  mobileUsability?: { inputs: number; smallInputs: number; targets: number; smallTargets: number; smallTargetExamples: string[] };
   perf?: PerfData;
 }
 
@@ -69,6 +70,25 @@ export interface PerfData {
   cls: number | null;
   transferBytes: number;
   requests: number;
+  /** Суммарное время блокировки основного потока (TBT, лабораторный аналог INP) */
+  tbtMs?: number | null;
+  longestTaskMs?: number | null;
+  longTasks?: number | null;
+  images?: { modern: number; legacy: number; belowFoldNoLazy: number; oversized: number; noSize: number };
+  /** Синхронные скрипты в <head> */
+  renderBlocking?: number;
+  assets?: AssetSummary;
+}
+
+export interface AssetSummary {
+  bytes: { js: number; css: number; img: number; font: number; other: number };
+  thirdPartyJsBytes: number;
+  /** Текстовые ресурсы своего домена > 10 КБ без gzip/br */
+  uncompressed: string[];
+  /** Статика своего домена без кэширования (no-store, max-age=0 или нет заголовка) */
+  noCache: string[];
+  /** Ресурсы с ошибкой 4xx/5xx */
+  broken: string[];
 }
 
 export interface VisualData {
