@@ -6,7 +6,8 @@ import { join } from "node:path";
 const [dir, termLog, terms] = process.argv.slice(2);
 const OUT = "media"; mkdirSync(OUT, { recursive: true });
 const words = terms.split(",").map(s => s.trim()).filter(Boolean);
-const re = new RegExp(words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "gi");
+const phone = String.raw`\+?[78][\s\-(]*\d{3}[\s\-)]*\d{3}[\s-]*\d{2}[\s-]*\d{2}`;
+const re = new RegExp([phone, ...words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))].join("|"), "gi");
 const mask = rx => {
   const r = new RegExp(rx, "gi"), walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes = [];
   while (walk.nextNode()) if (r.test(walk.currentNode.nodeValue)) nodes.push(walk.currentNode), (r.lastIndex = 0);
