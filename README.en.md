@@ -45,7 +45,9 @@ Requires Google Chrome, Microsoft Edge, Yandex Browser or Chromium.
    ```
 4. **Any MCP client** (Cursor, Codex, Windsurf): command `npx -y <tarball-url> mcp`; tools `audit_sites`, `get_details`; prompt `site_audit_expert`.
 
-Key CLI options: `-p` max pages (30), `-f html,md,csv,json`, `--open`, `--compare-last` (monitoring: what got fixed / appeared), `--webhook <url>` (n8n, Make, Zapier), `--ai` (with `ANTHROPIC_API_KEY` or any OpenAI-compatible `OPENAI_API_KEY` + `OPENAI_BASE_URL`).
+Key CLI options: `-p` max pages (30), `-f html,md,csv,xlsx,json,pdf`, `--sheet <Apps Script URL>` (append results to your Google Sheet without OAuth, see [docs/google-sheets.gs](docs/google-sheets.gs)), `--crux-key <key>` (real-user Core Web Vitals from Chrome UX Report), `--open`, `--compare-last` (monitoring: what got fixed / appeared), `--webhook <url>` (n8n, Make, Zapier), `--ai` (with `ANTHROPIC_API_KEY` or any OpenAI-compatible `OPENAI_API_KEY` + `OPENAI_BASE_URL`).
+
+Scheduled checks without a server: `site-audit-ru schedule add example.ru a.ru --every week --at 09:00` creates a Windows Task Scheduler task or a cron entry (macOS, Linux); each run is compared with the previous one. `schedule list`, `schedule remove <site>`.
 
 ## Ethics
 

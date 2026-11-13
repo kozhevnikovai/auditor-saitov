@@ -1,3 +1,4 @@
+import type { FieldData } from "../extras/crux.js";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { Level, SiteReport } from "../types.js";
@@ -191,8 +192,16 @@ function siteCard(r: SiteReport, idx: number): string {
     <div class="total"><span class="mono big ${st}">${r.total ?? "—"}</span><span class="mono small muted">из 100 · ${r.pagesCrawled} стр.</span>${r.total !== null ? `<span class="mini mono small"><span class="mark fail"></span>${c.fail} <span class="mark warn"></span>${c.warn} <span class="mark good"></span>${c.ok}</span>` : ""}</div>
     <div class="bars">${KEYS.map((k) => `<span class="bl">${BLOCKS[k]}</span>${gauge(r.total === null ? null : r.blocks[k].score)}`).join("")}</div>
   </div>
+  ${r.field ? fieldHtml(r.field) : ""}
   ${d || m ? `<div class="shots">${d ? `<figure><img src="${d}" alt="Компьютер"><figcaption class="mono small">1440 × 900</figcaption></figure>` : ""}${m ? `<figure class="m"><img src="${m}" alt="Телефон"><figcaption class="mono small">390 × 844</figcaption></figure>` : ""}</div>` : ""}
 </section>`;
+}
+
+function fieldHtml(f: FieldData): string {
+  const cls: Record<string, string> = { "хорошо": "good", "нужно улучшить": "warn", "плохо": "fail" };
+  const head = `<p class="mono label">Реальные посетители · Chrome UX Report · ${f.formFactor === "PHONE" ? "телефоны" : f.formFactor === "DESKTOP" ? "компьютеры" : "все устройства"}${f.period ? " · " + esc(f.period) : ""}</p>`;
+  if (!f.metrics.length) return `<div class="field">${head}<p class="small muted">${esc(f.note ?? "Нет данных")}</p></div>`;
+  return `<div class="field">${head}<ul class="fl">${f.metrics.map((m) => `<li class="f ${cls[m.rating]}"><span class="chip ${cls[m.rating]}">${esc(m.rating)}</span><div class="msg">${esc(m.label)}: <b class="mono">${m.unit ? Math.round(m.p75) + " " + m.unit : m.p75}</b></div></li>`).join("")}</ul></div>`;
 }
 
 function findingRow(level: Level, message: string, evidence?: string[], hint?: string): string {
@@ -339,6 +348,7 @@ ol.actions li::before{content:counter(a);position:absolute;left:0;top:12px;width
 /* подробно */
 details{border-top:1px solid var(--line)}details:first-of-type{border-top:0}summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;list-style:none}summary::-webkit-details-marker{display:none}
 .s-name{font-weight:600}.s-name::before{content:"▸ ";color:var(--pencil)}details[open] .s-name::before{content:"▾ "}.s-meta{display:flex;align-items:center;gap:14px}.s-meta .stack{width:140px;margin:0}.s-score{font-size:18px;font-weight:600;min-width:34px;text-align:right}
+.field{padding:0 20px 12px}.field ul.fl{list-style:none;padding:0;margin:0}
 ul.findings{list-style:none;padding:0;margin:0 0 12px}li.f{display:flex;gap:14px;padding:9px 0;border-top:1px solid var(--plate);align-items:baseline}li.f .chip{flex:0 0 100px;text-align:center}
 li.f.ok .msg,li.f.info .msg{color:var(--pencil)}li.f.fail .msg{font-weight:600}
 .ev{color:var(--pencil);font-size:11.5px;margin-top:4px;word-break:break-all}.note{margin:6px 0 14px}.swatches{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}.sw{display:flex;align-items:center;gap:6px;font-size:11.5px}.sw i{width:22px;height:22px;border:1px solid var(--line);border-radius:6px;display:inline-block}

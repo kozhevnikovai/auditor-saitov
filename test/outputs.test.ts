@@ -122,7 +122,9 @@ describe("MCP-сервер", () => {
     const client = new Client({ name: "test", version: "1.0.0" });
     await client.connect(new StdioClientTransport({ command: "node", args: [join(import.meta.dirname, "..", "dist", "cli.js"), "mcp"], env: { ...process.env } as Record<string, string> }));
     const tools = await client.listTools();
-    expect(tools.tools.map((t) => t.name)).toEqual(expect.arrayContaining(["audit_sites", "get_details"]));
+    expect(tools.tools.map((t) => t.name)).toEqual(expect.arrayContaining(["audit_sites", "get_details", "export_pdf", "field_vitals"]));
+    const fv = (await client.callTool({ name: "field_vitals", arguments: { url: goodUrl } })) as { content: { text: string }[] };
+    if (!process.env.SITE_AUDIT_CRUX_KEY) expect(fv.content[0].text).toContain("Ключ CrUX API не задан");
     const out = tmp();
     const r = (await client.callTool({ name: "audit_sites", arguments: { urls: [goodUrl, badUrl], max_pages: 5, out_dir: out } }, undefined, { timeout: 120_000 })) as { content: { text: string }[]; structuredContent: { reportPath: string } };
     expect(r.content[0].text).toContain("| **Итог** |");

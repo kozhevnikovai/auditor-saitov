@@ -1,3 +1,4 @@
+import { fieldMarkdown } from "../extras/crux.js";
 import type { SiteReport } from "../types.js";
 import { DISCLAIMER } from "../analyzers/compliance.js";
 import { BLOCK_KEYS, BLOCKS, competitorGaps, type Diff, HINTS, hostOf, topActions } from "./insights.js";
@@ -39,6 +40,7 @@ export function renderMarkdown(sites: SiteReport[], diffs: Diff[] = [], ai?: str
   }
   for (const s of sites.filter((x) => x.total !== null)) {
     L.push(`## ${hostOf(s.url)} — подробно`, "");
+    if (s.field) L.push(fieldMarkdown(s.field));
     for (const k of BLOCK_KEYS) {
       L.push(`### ${BLOCKS[k]} — ${s.blocks[k].score}/100`, "");
       for (const f of s.blocks[k].findings) {

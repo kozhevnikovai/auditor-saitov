@@ -16,6 +16,7 @@ export function webhookPayload(sites: SiteReport[], diffs: Diff[] = []) {
       total: s.total,
       limited: s.limited,
       scores: Object.fromEntries(BLOCK_KEYS.map((k) => [k, s.total === null ? null : s.blocks[k].score])),
+      ...(s.field?.metrics.length ? { field: Object.fromEntries(s.field.metrics.map((m) => [m.key, { p75: m.p75, rating: m.rating }])) } : {}),
       topIssues: s.total === null ? [] : topActions(s, 5).map((a) => ({ block: a.block, level: a.level, message: a.message })),
     })),
     changes: diffs.map((d) => ({ host: hostOf(d.url), before: d.total.before, after: d.total.after, fixed: d.fixed.map((f) => f.message), appeared: d.appeared.map((f) => f.message) })),

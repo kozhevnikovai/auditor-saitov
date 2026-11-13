@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { collectSites, DEFAULTS } from "./collect.js";
 import { aiReview, resolveAi } from "./ai.js";
 import { hostOf } from "./report/insights.js";
-import { loadReports, parseFormats, writeOutputs } from "./output.js";
+import { loadReports, parseFormats, writeOutputs, writePdf } from "./output.js";
 import { sendWebhook, webhookPayload } from "./report/webhook.js";
 import { localStamp, VERSION } from "./version.js";
 
@@ -48,7 +48,7 @@ program
   .argument("<urls...>", "адреса сайтов: ваш первым, затем конкуренты (до 10)")
   .option("-p, --max-pages <n>", "сколько страниц обойти на каждом сайте", String(DEFAULTS.maxPages))
   .option("-o, --out <dir>", "папка для отчётов (по умолчанию site-audit/<дата>-<сайт>)")
-  .option("-f, --format <list>", "форматы через запятую: html, md, csv, xlsx, json", "html,md,csv")
+  .option("-f, --format <list>", "форматы через запятую: html, md, csv, xlsx, json, pdf", "html,md,csv")
   .option("--baseline <audit.json>", "сравнить с прошлым прогоном: что исправлено и что появилось")
   .option("--compare-last", "автоматически сравнить с последним прогоном этого сайта в папке site-audit")
   .option("--ai", "добавить заключение ИИ-экспертов (ключ в ANTHROPIC_API_KEY или OPENAI_API_KEY)")
@@ -60,6 +60,8 @@ program
   .option("--ignore-robots", "не учитывать robots.txt (только для своего сайта)")
   .option("--chrome-path <path>", "путь к Chrome, Edge, Яндекс Браузеру или Chromium")
   .option("--allow-private", "разрешить адреса локальной сети (аудит внутреннего сайта, localhost)")
+  .option("--sheet <url>", "дописать сводку и находки в Google Таблицу (адрес веб-приложения Apps Script, см. README)")
+  .option("--crux-key <key>", "ключ CrUX API Google: Core Web Vitals реальных посетителей (или переменная SITE_AUDIT_CRUX_KEY)")
   .action(async (urls: string[], o) => {
     if (urls.length > 10) throw new Error("Не больше 10 сайтов за один запуск");
     const formats = parseFormats(o.format);
@@ -85,9 +87,20 @@ program
         ai = null;
       }
     }
+    const cruxKey = o.cruxKey ?? process.env.SITE_AUDIT_CRUX_KEY;
+    if (cruxKey) {
+      const { fetchCrux } = await import("./extras/crux.js");
+      for (const r of reports) {
+        if (r.total === null) continue;
+        try { r.field = await fetchCrux(r.url, cruxKey); } catch (e) { log(`CrUX ${hostOf(r.url)}: ${(e as Error).message}`); }
+      }
+    }
     const baseline = o.baseline ?? (o.compareLast ? findLast(root, hostOf(reports[0].url), outDir) : undefined);
     if (baseline) log(`Сравниваю с прошлым прогоном: ${baseline}`);
     const { files, diffs } = writeOutputs(reports, { outDir, formats, baseline, ai: aiText });
+    if (formats.includes("pdf")) {
+      try { files.pdf = await writePdf(reports, { outDir, files, ai: aiText, chromePath: o.chromePath }); } catch (e) { log(`PDF не создан: ${(e as Error).message}`); }
+    }
 
     process.stdout.write("\n");
     for (const r of reports) {
@@ -109,6 +122,15 @@ program
         log(`Webhook не отправлен: ${(e as Error).message}`);
       }
     }
+    if (o.sheet) {
+      try {
+        const { sendToSheet } = await import("./extras/sheets.js");
+        await sendToSheet(o.sheet, reports);
+        log("Google Таблица: строки добавлены");
+      } catch (e) {
+        log(`Google Таблица не обновлена: ${(e as Error).message}`);
+      }
+    }
     if (o.open && files.html) openFile(files.html);
   });
 
@@ -117,9 +139,10 @@ program
   .description("Пересобрать отчёты из сохранённого audit.json (например, в другом формате)")
   .argument("<audit.json>")
   .option("-o, --out <dir>", "папка для отчётов (по умолчанию рядом с audit.json)")
-  .option("-f, --format <list>", "форматы: html, md, csv, xlsx, json", "html,md,csv")
+  .option("-f, --format <list>", "форматы: html, md, csv, xlsx, json, pdf", "html,md,csv")
   .option("--baseline <audit.json>", "сравнить с прошлым прогоном")
-  .action((path: string, o) => {
+  .option("--chrome-path <path>", "браузер для PDF")
+  .action(async (path: string, o) => {
     const sites = loadReports(path);
     const outDir = o.out ?? dirname(path);
     let ai: string | undefined;
@@ -128,8 +151,48 @@ program
     } catch {
       /* без заключения */
     }
-    const { files } = writeOutputs(sites, { outDir, formats: parseFormats(o.format), baseline: o.baseline, ai });
+    const formats = parseFormats(o.format);
+    const { files } = writeOutputs(sites, { outDir, formats, baseline: o.baseline, ai });
+    if (formats.includes("pdf")) files.pdf = await writePdf(sites, { outDir, files, ai, chromePath: o.chromePath });
     process.stdout.write(Object.values(files).join("\n") + "\n");
+  });
+
+const sched = program.command("schedule").description("Проверка по расписанию на этом компьютере: Планировщик Windows или cron (macOS, Linux)");
+sched
+  .command("add")
+  .argument("<urls...>", "сайт и до 4 конкурентов")
+  .option("--every <day|week>", "как часто: day — каждый день, week — по понедельникам", "week")
+  .option("--at <ЧЧ:ММ>", "во сколько", "09:00")
+  .option("-p, --max-pages <n>", "страниц на сайт")
+  .option("--webhook <url>", "сводка после каждой проверки (n8n, Make, Битрикс24, свой бот)")
+  .option("--sheet <url>", "дописывать результат в Google Таблицу")
+  .description("Добавить проверку по расписанию; отчёты — в папке site-audit в домашней папке, с сравнением с прошлым разом")
+  .action(async (urls: string[], o) => {
+    const { addSchedule } = await import("./extras/schedule.js");
+    if (o.every !== "day" && o.every !== "week") throw new Error("--every: day или week");
+    process.stdout.write(addSchedule({ urls, every: o.every, at: o.at, webhook: o.webhook, sheet: o.sheet, maxPages: o.maxPages ? Number(o.maxPages) : undefined }) + "\n");
+  });
+sched.command("list").description("Список проверок по расписанию").action(async () => {
+  const { listSchedules } = await import("./extras/schedule.js");
+  const l = listSchedules();
+  process.stdout.write((l.length ? l.join("\n") : "Проверок по расписанию нет") + "\n");
+});
+sched.command("remove").argument("<url>").description("Удалить проверку по расписанию для сайта").action(async (url: string) => {
+  const { removeSchedule } = await import("./extras/schedule.js");
+  process.stdout.write(removeSchedule(url) + "\n");
+});
+
+program
+  .command("crux")
+  .argument("<url>")
+  .option("--key <key>", "ключ CrUX API (или SITE_AUDIT_CRUX_KEY)")
+  .option("--desktop", "данные для компьютеров (по умолчанию — телефоны)")
+  .description("Core Web Vitals реальных посетителей из Chrome UX Report Google")
+  .action(async (url: string, o) => {
+    const key = o.key ?? process.env.SITE_AUDIT_CRUX_KEY;
+    if (!key) throw new Error("Нужен ключ CrUX API: --key или SITE_AUDIT_CRUX_KEY (бесплатно, Google Cloud Console → APIs → Chrome UX Report API)");
+    const { fetchCrux, fieldMarkdown } = await import("./extras/crux.js");
+    process.stdout.write(fieldMarkdown(await fetchCrux(url, key, o.desktop ? "DESKTOP" : "PHONE")) + "\n");
   });
 
 program

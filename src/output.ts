@@ -7,7 +7,7 @@ import { renderCsv, renderSummaryCsv } from "./report/csv.js";
 import { renderXlsx } from "./report/xlsx.js";
 import { diffReports, type Diff } from "./report/insights.js";
 
-export const FORMATS = ["html", "md", "csv", "xlsx", "json"] as const;
+export const FORMATS = ["html", "md", "csv", "xlsx", "json", "pdf"] as const;
 export type Format = (typeof FORMATS)[number];
 
 export function parseFormats(s: string): Format[] {
@@ -50,4 +50,12 @@ export function writeOutputs(sites: SiteReport[], o: WriteOptions): { files: Rec
   }
   if (o.formats.includes("xlsx")) files.xlsx = put("report.xlsx", renderXlsx(sites));
   return { files, diffs };
+}
+
+/** PDF печатается из HTML-отчёта установленным браузером (асинхронно, после остальных форматов) */
+export async function writePdf(sites: SiteReport[], o: { outDir: string; files: Record<string, string>; ai?: string; chromePath?: string }): Promise<string> {
+  const { htmlToPdf } = await import("./extras/pdf.js");
+  const html = o.files.html ?? resolve(join(o.outDir, "report.html"));
+  if (!o.files.html) writeFileSync(html, renderHtml({ sites, diffs: [], ai: o.ai }));
+  return htmlToPdf(html, resolve(join(o.outDir, "report.pdf")), o.chromePath);
 }
