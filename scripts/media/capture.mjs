@@ -22,18 +22,14 @@ const p = await b.newPage({ viewport: { width: 1280, height: 800 }, recordVideo:
 await p.goto("file://" + join(process.cwd(), dir, html)); await p.waitForTimeout(800);
 await p.evaluate(mask, re.source);
 await p.screenshot({ path: `${OUT}/report.png` });
-// разделы отчёта по заголовкам
-const heads = await p.$$eval("h2, h3", hs => hs.map((h, i) => ({ i, t: h.textContent.trim() })));
-writeFileSync(`${OUT}/sections.json`, JSON.stringify(heads, null, 1));
-const want = { compare: /сравнен|конкурент/i, speed: /скорост|CrUX|посетител/i, law: /закон|152|cookie/i, findings: /находк|исправ|что делать/i };
-for (const [name, rx] of Object.entries(want)) {
-  const h = heads.find(x => rx.test(x.t)); if (!h) continue;
-  await p.evaluate(i => document.querySelectorAll("h2, h3")[i].scrollIntoView({ block: "start" }), h.i);
-  await p.evaluate(() => window.scrollBy(0, -24)); await p.waitForTimeout(500);
-  await p.screenshot({ path: `${OUT}/report-${name}.png` });
-}
-await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(400);
-for (let i = 0; i < 24; i++) { await p.mouse.wheel(0, 300); await p.waitForTimeout(350); }
+// работа в интерфейсе отчёта: меню, сравнение, подробности, фильтр «Только проблемы»
+const step = async (name, act) => { await act(); await p.waitForTimeout(1300); await p.screenshot({ path: `${OUT}/${name}.png` }); };
+await p.waitForTimeout(1200);
+await step("report-compare", () => p.click('nav a[href="#compare"]'));
+await step("report-details", () => p.click('nav a[href="#details"]'));
+await step("report-open", async () => { const d = p.locator("#details details:not([open]) summary").first(); await d.scrollIntoViewIfNeeded(); await d.click(); });
+await step("report-issues", async () => { await p.click("#only-issues"); });
+await p.click('nav a[href="#main"]'); await p.waitForTimeout(1200);
 const v = p.video(); await p.close();
 // PDF — первая страница
 const pdf = readdirSync(dir).find(f => f.endsWith(".pdf"));

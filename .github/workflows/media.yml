@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      SITES: "https://www.florist.ru https://azalianow.ru https://kafe-dostavka.ru"
-      TERMS: "florist.ru,флорист.ру,florist,azalianow,азалия нау,азалиянау,azalia,kafe-dostavka,колибри,kolibri"
+      CANDIDATES: "https://azalianow.ru https://studioflor.ru https://iflori.ru https://dostavkatsvetov.ru https://www.rozaluxe.ru"
+      TERMS: "azalianow,азалия нау,азалиянау,azalia,pionflo,пионфло,studioflor,студиофлор,studio flor,iflori,айфлори,dostavkatsvetov,доступная доставка цветов,климанова,rozaluxe,розалюкс,шитов"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -21,6 +21,11 @@ jobs:
       - run: npm ci && npm run build
       - name: Аудит трёх сайтов — свой первым, затем конкуренты
         run: |
+          # первые три сайта, которые открываются без защиты от ботов и без взломанного спама
+          SITES=""; for u in $CANDIDATES; do
+            c=$(curl -s -m 20 -o p.html -w "%{http_code}" "$u"); spam=$(grep -ciE "кокаин|закладк|casino|казино|бошки" p.html || true)
+            echo "$u → $c, спам: $spam"; [ "$c" = 200 ] && [ "$spam" = 0 ] && SITES="$SITES $u"; [ $(wc -w <<<"$SITES") = 3 ] && break
+          done
           node dist/cli.js $SITES -p 12 -o report -f html,pdf,xlsx,md 2>&1 | tee terminal.log
       - run: npx playwright-core install ffmpeg
       - run: node scripts/media/capture.mjs report terminal.log "$TERMS"
