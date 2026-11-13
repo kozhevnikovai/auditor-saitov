@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      SITES: "https://www.fanburg.ru https://azalianow.ru https://kafe-dostavka.ru"
-      TERMS: "fanburg,фанбург,azalianow,азалия нау,азалиянау,azalia,kafe-dostavka,колибри,kolibri"
+      SITES: "https://www.florist.ru https://azalianow.ru https://kafe-dostavka.ru"
+      TERMS: "florist.ru,флорист.ру,florist,azalianow,азалия нау,азалиянау,azalia,kafe-dostavka,колибри,kolibri"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
