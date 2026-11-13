@@ -10,6 +10,7 @@ permissions:
 jobs:
   capture:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     env:
       SITES: "https://www.fanburg.ru https://azalianow.ru https://kafe-dostavka.ru"
       TERMS: "fanburg,фанбург,azalianow,азалия нау,азалиянау,azalia,kafe-dostavka,колибри,kolibri"
@@ -20,7 +21,7 @@ jobs:
       - run: npm ci && npm run build
       - name: Аудит трёх сайтов — свой первым, затем конкуренты
         run: |
-          node dist/cli.js $SITES -p 15 -o report -f html,pdf,xlsx,md 2>&1 | tee terminal.log
+          node dist/cli.js $SITES -p 12 -o report -f html,pdf,xlsx,md 2>&1 | tee terminal.log
       - run: node scripts/media/capture.mjs report terminal.log "$TERMS"
       - uses: actions/upload-artifact@v7
         if: always()
