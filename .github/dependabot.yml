@@ -8,3 +8,7 @@ updates:
     schedule: { interval: weekly }
     open-pull-requests-limit: 3
     groups: { all: { patterns: ["*"] } }
+    # undici 8 требует Node.js 22.19+, а CLI и MCP поддерживают Node.js 20+
+    ignore:
+      - dependency-name: undici
+        update-types: ["version-update:semver-major"]
