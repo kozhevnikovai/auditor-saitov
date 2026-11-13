@@ -83,6 +83,9 @@ function parseHostPort(s: string, defPort: number): { host: string; port: number
 export async function startEgressProxy(o: { allowPrivate: boolean; resolver?: Resolver }): Promise<EgressProxy> {
   const lookup = guardedLookup(o.allowPrivate, o.resolver);
   const sockets = new Set<Socket>();
+  // исходящие соединения к сайтам тоже закрываются вместе с прокси, иначе открытые туннели держат процесс
+  const upstream = new Set<{ destroy(): unknown }>();
+  const track = <T extends { destroy(): unknown; once(e: "close", f: () => void): unknown }>(u: T): T => { upstream.add(u); u.once("close", () => upstream.delete(u)); return u; };
   const server: Server = createServer((req, res) => {
     // обычный http через прокси: абсолютный адрес в строке запроса
     let target: URL;
@@ -92,10 +95,10 @@ export async function startEgressProxy(o: { allowPrivate: boolean; resolver?: Re
     const headers = { ...req.headers };
     delete headers["proxy-connection"];
     delete headers["proxy-authorization"];
-    const up = httpRequest({ host: target.hostname.replace(/^\[|\]$/g, ""), port: target.port || 80, path: target.pathname + target.search, method: req.method, headers, lookup }, (r: IncomingMessage) => {
+    const up = track(httpRequest({ host: target.hostname.replace(/^\[|\]$/g, ""), port: target.port || 80, path: target.pathname + target.search, method: req.method, headers, lookup }, (r: IncomingMessage) => {
       res.writeHead(r.statusCode ?? 502, r.headers);
       r.pipe(res);
-    });
+    }));
     up.on("error", (e) => { if (!res.headersSent) res.writeHead((e as { code?: string }).code === "EBLOCKED" ? 403 : 502); res.end(); });
     req.pipe(up);
   });
@@ -103,7 +106,7 @@ export async function startEgressProxy(o: { allowPrivate: boolean; resolver?: Re
     const hp = parseHostPort(req.url ?? "", 443);
     if (!hp) { client.end("HTTP/1.1 400 Bad Request\r\n\r\n"); return; }
     if (literalBlocked(hp.host, o.allowPrivate)) { client.end("HTTP/1.1 403 Forbidden\r\n\r\n"); return; }
-    const up = netConnect({ host: hp.host, port: hp.port, lookup });
+    const up = track(netConnect({ host: hp.host, port: hp.port, lookup }));
     up.setTimeout(30_000, () => up.destroy(Object.assign(new Error("timeout"), { code: "ETIMEDOUT" })));
     up.once("connect", () => {
       client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
@@ -117,12 +120,14 @@ export async function startEgressProxy(o: { allowPrivate: boolean; resolver?: Re
       else client.destroy();
     });
     client.on("error", () => up.destroy());
+    client.on("close", () => up.destroy());
+    up.on("close", () => client.destroy());
   });
   server.on("connection", (s: Socket) => { sockets.add(s); s.on("close", () => sockets.delete(s)); });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const { port } = server.address() as AddressInfo;
   return {
     url: `http://127.0.0.1:${port}`,
-    close: () => new Promise<void>((r) => { for (const s of sockets) s.destroy(); server.close(() => r()); }),
+    close: () => new Promise<void>((r) => { for (const u of upstream) u.destroy(); for (const s of sockets) s.destroy(); server.close(() => r()); }),
   };
 }
