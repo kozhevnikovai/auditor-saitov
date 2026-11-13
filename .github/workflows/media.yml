@@ -23,7 +23,7 @@ jobs:
         run: |
           # первые три сайта, которые открываются без защиты от ботов и без взломанного спама
           SITES=""; for u in $CANDIDATES; do
-            c=$(curl -s -m 20 -o p.html -w "%{http_code}" "$u"); spam=$(grep -ciE "кокаин|закладк|casino|казино|бошки" p.html || true)
+            c=$(curl -s -m 20 -o p.html -w "%{http_code}" "$u" || true); spam=$(grep -ciE "кокаин|закладк|casino|казино|бошки" p.html || true)
             echo "$u → $c, спам: $spam"; [ "$c" = 200 ] && [ "$spam" = 0 ] && SITES="$SITES $u"; [ $(wc -w <<<"$SITES") = 3 ] && break
           done
           node dist/cli.js $SITES -p 12 -o report -f html,pdf,xlsx,md 2>&1 | tee terminal.log
