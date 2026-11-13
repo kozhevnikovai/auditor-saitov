@@ -19,12 +19,14 @@
     "mcp_config": {
       "command": "node",
       "args": ["${__dirname}/dist/cli.js", "mcp"],
-      "env": { "CHROME_PATH": "${user_config.chrome_path}" }
+      "env": { "CHROME_PATH": "${user_config.chrome_path}", "SITE_AUDIT_CRUX_KEY": "${user_config.crux_key}" }
     }
   },
   "tools": [
     { "name": "audit_sites", "description": "Аудит 1–5 сайтов: SEO, структура, стиль, технологии, законы РФ; отчёты HTML/MD/CSV и сводка" },
-    { "name": "get_details", "description": "Подробные находки и данные по сохранённому отчёту" }
+    { "name": "get_details", "description": "Подробные находки и данные по сохранённому отчёту" },
+    { "name": "export_pdf", "description": "Отчёт в PDF для клиента или руководителя" },
+    { "name": "field_vitals", "description": "Скорость у реальных посетителей (Chrome UX Report, по ключу)" }
   ],
   "prompts": [
     { "name": "site_audit_expert", "description": "Экспертное заключение по аудиту сайтов", "arguments": ["urls"], "text": "Проверь сайты ${arguments.urls} инструментом audit_sites и дай заключение пяти экспертов: главное, сравнение с конкурентами, план на 2 недели." }
@@ -34,6 +36,14 @@
       "type": "string",
       "title": "Путь к браузеру (необязательно)",
       "description": "Оставьте пустым — найдём Chrome, Edge или Яндекс Браузер сами.",
+      "required": false,
+      "default": ""
+    },
+    "crux_key": {
+      "type": "string",
+      "title": "Ключ CrUX API Google (необязательно)",
+      "description": "Для скорости у реальных посетителей. Бесплатно: Google Cloud Console → включить Chrome UX Report API → Credentials → API key.",
+      "sensitive": true,
       "required": false,
       "default": ""
     }

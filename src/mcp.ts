@@ -2,13 +2,13 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { homedir, tmpdir } from "node:os";
 import { existsSync, statSync } from "node:fs";
-import { basename, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { z } from "zod";
 import { collectSites } from "./collect.js";
 import { aiContext, expertPrompt } from "./ai.js";
 import { BLOCK_KEYS, hostOf } from "./report/insights.js";
 import { renderMarkdown } from "./report/md.js";
-import { loadReports, parseFormats, writeOutputs } from "./output.js";
+import { loadReports, parseFormats, writeOutputs, writePdf } from "./output.js";
 import { localStamp, VERSION } from "./version.js";
 
 const BLOCK = z.enum(["seo", "structure", "visual", "tech", "compliance"]);
@@ -40,7 +40,7 @@ export function buildServer(): McpServer {
       inputSchema: {
         urls: z.array(z.string()).min(1).max(5).describe("Адреса сайтов: свой первым, затем конкуренты"),
         max_pages: z.number().int().min(1).max(50).default(12).describe("Сколько страниц обойти на каждом сайте (по умолчанию 12)"),
-        formats: z.string().default("html,md,csv").describe("Форматы отчётов через запятую: html, md, csv, xlsx, json"),
+        formats: z.string().default("html,md,csv").describe("Форматы отчётов через запятую: html, md, csv, xlsx, json, pdf"),
         out_dir: z.string().optional().describe("Папка для отчётов (по умолчанию ~/site-audit/<дата>-<сайт>)"),
       },
     },
@@ -48,7 +48,14 @@ export function buildServer(): McpServer {
       const first = hostOf(urls[0].includes("://") ? urls[0] : "https://" + urls[0]);
       const outDir = safeOutDir(out_dir) ?? join(homedir(), "site-audit", `${localStamp()}-${first.replace(/[:\\/]/g, "_")}`);
       const { reports } = await collectSites(urls, { maxPages: max_pages, outDir, timeoutMs: 25_000 });
-      const { files } = writeOutputs(reports, { outDir, formats: parseFormats(formats) });
+      const fmts = parseFormats(formats);
+      const cruxKey = process.env.SITE_AUDIT_CRUX_KEY;
+      if (cruxKey) {
+        const { fetchCrux } = await import("./extras/crux.js");
+        for (const r of reports) if (r.total !== null) r.field = await fetchCrux(r.url, cruxKey).catch(() => undefined);
+      }
+      const { files } = writeOutputs(reports, { outDir, formats: fmts });
+      if (fmts.includes("pdf")) files.pdf = await writePdf(reports, { outDir, files }).catch(() => "PDF не создан: не найден браузер");
       const summary = renderMarkdown(reports)
         .split(/\n(?=## [^\n]+ — подробно)/)[0]
         .trim();
@@ -82,6 +89,37 @@ export function buildServer(): McpServer {
         ? JSON.stringify(sites.map((s) => ({ url: s.url, block, ...s.blocks[block] })), null, 1).slice(0, 80_000)
         : aiContext(sites, 80_000);
       return { content: [{ type: "text", text }] };
+    },
+  );
+
+  server.registerTool(
+    "export_pdf",
+    {
+      title: "Отчёт в PDF",
+      description: "Печатает сохранённый отчёт (audit.json из audit_sites) в PDF рядом с ним — для отправки клиенту или руководителю.",
+      inputSchema: { report_path: z.string().describe("Путь к audit.json из результата audit_sites") },
+    },
+    async ({ report_path }) => {
+      const path = safeReportPath(report_path);
+      const sites = loadReports(path);
+      const dir = dirname(path);
+      const pdf = await writePdf(sites, { outDir: dir, files: existsSync(join(dir, "report.html")) ? { html: join(dir, "report.html") } : {} });
+      return { content: [{ type: "text", text: `PDF: ${pdf}` }] };
+    },
+  );
+
+  server.registerTool(
+    "field_vitals",
+    {
+      title: "Скорость у реальных посетителей",
+      description: "Core Web Vitals реальных посетителей сайта (LCP, INP, CLS, FCP, TTFB, 75-й перцентиль за 28 дней) из Chrome UX Report Google. Нужен бесплатный ключ CrUX API в настройках расширения (SITE_AUDIT_CRUX_KEY); без ключа инструмент сообщит, как его получить.",
+      inputSchema: { url: z.string().describe("Адрес сайта"), device: z.enum(["phone", "desktop"]).default("phone") },
+    },
+    async ({ url, device }) => {
+      const key = process.env.SITE_AUDIT_CRUX_KEY;
+      if (!key) return { content: [{ type: "text", text: "Ключ CrUX API не задан. Получите бесплатный ключ: Google Cloud Console → APIs & Services → включить «Chrome UX Report API» → Credentials → API key, и укажите его в настройках расширения «Аудитор сайтов»." }] };
+      const { fetchCrux, fieldMarkdown } = await import("./extras/crux.js");
+      return { content: [{ type: "text", text: fieldMarkdown(await fetchCrux(url, key, device === "desktop" ? "DESKTOP" : "PHONE")) }] };
     },
   );
 

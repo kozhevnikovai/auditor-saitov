@@ -135,6 +135,8 @@ export interface SiteReport {
   };
   /** null, если сайт не удалось проверить */
   total: number | null;
+  /** Core Web Vitals реальных посетителей (CrUX, по ключу пользователя) */
+  field?: import("./extras/crux.js").FieldData;
 }
 
 export interface CollectOptions {
