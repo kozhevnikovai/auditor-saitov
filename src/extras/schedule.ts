@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { posix, win32 } from "node:path";
 
 export type Every = "day" | "week";
 export interface ScheduleOptions { urls: string[]; every: Every; at: string; webhook?: string; sheet?: string; maxPages?: number; dir?: string }
@@ -39,13 +39,13 @@ function checkTime(at: string): [number, number] {
   return [Number(m[1]), Number(m[2])];
 }
 
-const auditDir = (o: ScheduleOptions) => o.dir ?? join(homedir(), "site-audit");
+const auditDir = (o: ScheduleOptions) => o.dir ?? (process.platform === "win32" ? win32 : posix).join(homedir(), "site-audit");
 
 /** Скрипт .cmd для Windows: в Планировщике у команды лимит 261 символ, поэтому задание запускает файл */
 export function windowsScript(o: ScheduleOptions): string {
   const dir = auditDir(o);
   if (/["%&|<>^!]/.test(dir)) throw new Error("В пути к папке отчётов есть недопустимые символы");
-  return `@echo off\r\nchcp 65001 >nul\r\ncd /d "${dir}"\r\nnpx ${auditArgs(o).join(" ")} >> "${join(dir, "schedule.log")}" 2>&1\r\n`;
+  return `@echo off\r\nchcp 65001 >nul\r\ncd /d "${dir}"\r\nnpx ${auditArgs(o).join(" ")} >> "${win32.join(dir, "schedule.log")}" 2>&1\r\n`;
 }
 
 /** Аргументы schtasks для задания */
@@ -60,7 +60,7 @@ export function cronLine(o: ScheduleOptions): string {
   const dir = auditDir(o);
   if (!/^[A-Za-z0-9._\-\/ ]+$/.test(dir)) throw new Error("В пути к папке отчётов есть недопустимые символы");
   const q = (s: string) => `'${s}'`;
-  return `${m} ${h} * * ${o.every === "day" ? "*" : "1"} cd ${q(dir)} && npx ${auditArgs(o).join(" ")} >> ${q(join(dir, "schedule.log"))} 2>&1 ${MARK}${taskName(o.urls)}`;
+  return `${m} ${h} * * ${o.every === "day" ? "*" : "1"} cd ${q(dir)} && npx ${auditArgs(o).join(" ")} >> ${q(posix.join(dir, "schedule.log"))} 2>&1 ${MARK}${taskName(o.urls)}`;
 }
 
 /** Удаляет из crontab строки этого задания и добавляет новую (если line задана) */
@@ -79,7 +79,7 @@ const writeCrontab = (text: string) => execFileSync("crontab", ["-"], { input: t
 export function addSchedule(o: ScheduleOptions): string {
   mkdirSync(auditDir(o), { recursive: true });
   if (process.platform === "win32") {
-    const script = join(auditDir(o), `${taskName(o.urls)}.cmd`);
+    const script = win32.join(auditDir(o), `${taskName(o.urls)}.cmd`);
     writeFileSync(script, windowsScript(o));
     execFileSync("schtasks", windowsTask(o, script), { windowsHide: true, stdio: "pipe" });
     return `Задание «${taskName(o.urls)}» добавлено в Планировщик заданий Windows: ${o.every === "day" ? "каждый день" : "по понедельникам"} в ${o.at}. Отчёты — в ${auditDir(o)}`;
