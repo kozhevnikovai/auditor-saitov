@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version: 22, cache: npm }
       - run: npm ci && npm run build
-      - name: Аудит трёх сайтов (как в жизни: свой первым, затем конкуренты)
+      - name: Аудит трёх сайтов — свой первым, затем конкуренты
         run: |
           node dist/cli.js $SITES -p 15 -o report -f html,pdf,xlsx,md 2>&1 | tee terminal.log
       - run: node scripts/media/capture.mjs report terminal.log "$TERMS"
