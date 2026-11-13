@@ -22,6 +22,7 @@ jobs:
       - name: Аудит трёх сайтов — свой первым, затем конкуренты
         run: |
           node dist/cli.js $SITES -p 12 -o report -f html,pdf,xlsx,md 2>&1 | tee terminal.log
+      - run: npx playwright-core install ffmpeg
       - run: node scripts/media/capture.mjs report terminal.log "$TERMS"
       - uses: actions/upload-artifact@v7
         if: always()
@@ -30,3 +31,4 @@ jobs:
           path: |
             media/
             report/*.md
+            report/*.html
