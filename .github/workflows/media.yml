@@ -46,4 +46,4 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci && npm run build:mcpb
       - uses: actions/upload-artifact@v7
-        with: { name: site-audit-ru-mcpb, path: site-audit-ru.mcpb }
+        with: { name: site-audit-ru-mcpb, path: build/site-audit-ru.mcpb }
