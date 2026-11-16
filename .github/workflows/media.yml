@@ -27,10 +27,10 @@ jobs:
             echo "$u → $c, спам: $spam"; [ "$c" = 200 ] && [ "$spam" = 0 ] && SITES="$SITES $u"; [ $(wc -w <<<"$SITES") = 3 ] && break
           done
           node dist/cli.js $SITES -p 12 -o report -f html,pdf,xlsx,md,json 2>&1 | tee terminal.log
-      - name: Как Аудитор читает сайт — свой сайт автора
+      - name: Как Аудитор читает сайт — сайт из сравнения, с замыливанием
         run: |
-          node dist/cli.js https://sredapass.ru -p 8 -o scan -f json,html
-          node scripts/media/scan.mjs scan/audit.json https://sredapass.ru
+          node dist/cli.js https://azalianow.ru -p 8 -o scan -f json,html
+          node scripts/media/scan.mjs scan/audit.json https://azalianow.ru "$TERMS"
           cp scan/*.html media/scan/report.html
       - run: npx playwright-core install ffmpeg
       - run: node scripts/media/capture.mjs report terminal.log "$TERMS"

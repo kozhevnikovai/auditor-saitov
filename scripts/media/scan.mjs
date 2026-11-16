@@ -2,7 +2,7 @@
 // с результатом из audit.json того же прогона. node scripts/media/scan.mjs <audit.json> <url>
 import { chromium } from "playwright-core";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-const [auditPath, url] = process.argv.slice(2);
+const [auditPath, url, terms = ""] = process.argv.slice(2);
 const OUT = "media/scan"; mkdirSync(OUT, { recursive: true });
 const site = JSON.parse(readFileSync(auditPath, "utf8")).sites[0];
 const all = Object.entries(site.blocks).flatMap(([block, b]) => b.findings.map(f => ({ ...f, block })));
@@ -10,6 +10,14 @@ const pick = ids => { for (const id of ids) { const f = all.find(x => x.id === i
 const b = await chromium.launch({ executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome" });
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
 await p.goto(url, { waitUntil: "networkidle", timeout: 60e3 }).catch(() => {}); await p.waitForTimeout(2500);
+// замыливаем название, домен, телефоны и логотип (картинки и svg в шапке)
+await p.evaluate(rx => {
+  const r = new RegExp(rx, "gi"), w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n = [];
+  while (w.nextNode()) { r.lastIndex = 0; if (r.test(w.currentNode.nodeValue)) n.push(w.currentNode); }
+  for (const t of n) { const s = document.createElement("span"); s.style.cssText = "filter:blur(6px)"; s.textContent = t.nodeValue; t.replaceWith(s); }
+  const hd = document.querySelector("header") || document.body;
+  hd.querySelectorAll('img, svg, [class*="logo" i]').forEach(e => { if (e.getBoundingClientRect().top < 200) e.style.filter = "blur(10px)"; });
+}, [String.raw`\+?[78][\s\-(]*\d{3}[\s\-)]*\d{3}[\s-]*\d{2}[\s-]*\d{2}`, ...terms.split(",").filter(Boolean)].join("|"));
 const H = Math.min(2700, await p.evaluate(() => document.documentElement.scrollHeight));
 const boxes = await p.evaluate(H => {
   const vis = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 20 && r.height > 10 && s.visibility !== "hidden" && s.display !== "none" && r.top + scrollY < H; };
