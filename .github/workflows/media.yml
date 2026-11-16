@@ -37,3 +37,13 @@ jobs:
             media/
             report/*.md
             report/*.html
+  mcpb:
+    # расширение Claude Desktop из этой ветки — для записи экрана на ПК
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npm run build:mcpb
+      - uses: actions/upload-artifact@v7
+        with: { name: site-audit-ru-mcpb, path: site-audit-ru.mcpb }
