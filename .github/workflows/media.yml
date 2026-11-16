@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 40
     env:
       CANDIDATES: "https://azalianow.ru https://studioflor.ru https://iflori.ru https://dostavkatsvetov.ru https://www.rozaluxe.ru"
-      TERMS: "azalianow,азалия нау,азалиянау,azalia,pionflo,пионфло,studioflor,студиофлор,studio flor,iflori,айфлори,dostavkatsvetov,доступная доставка цветов,климанова,rozaluxe,розалюкс,шитов"
+      TERMS: "azalianow,азалия,азалиянау,azalia,pionflo,пионфло,studioflor,студиофлор,studio flor,iflori,айфлори,dostavkatsvetov,доступная доставка цветов,климанова,rozaluxe,розалюкс,шитов"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
