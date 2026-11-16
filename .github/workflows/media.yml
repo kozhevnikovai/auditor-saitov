@@ -1,0 +1,55 @@
+name: media
+# Скриншоты настоящего отчёта (реальные сайты; домены, названия и логотипы замыливаются)
+on:
+  workflow_dispatch:
+  push:
+    branches: ['media/**']
+    paths: ['.github/workflows/media.yml', 'scripts/media/**']
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CANDIDATES: "https://azalianow.ru https://studioflor.ru https://iflori.ru https://dostavkatsvetov.ru https://www.rozaluxe.ru"
+      TERMS: "azalianow,азалия,азалиянау,azalia,pionflo,пионфло,studioflor,студиофлор,studio flor,iflori,айфлори,dostavkatsvetov,доступная доставка цветов,климанова,rozaluxe,розалюкс,шитов"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npm run build
+      - name: Аудит трёх сайтов — свой первым, затем конкуренты
+        run: |
+          # первые три сайта, которые открываются без защиты от ботов и без взломанного спама
+          SITES=""; for u in $CANDIDATES; do
+            c=$(curl -s -m 20 -o p.html -w "%{http_code}" "$u" || true); spam=$(grep -ciE "кокаин|закладк|casino|казино|бошки" p.html || true)
+            echo "$u → $c, спам: $spam"; [ "$c" = 200 ] && [ "$spam" = 0 ] && SITES="$SITES $u"; [ $(wc -w <<<"$SITES") = 3 ] && break
+          done
+          node dist/cli.js $SITES -p 12 -o report -f html,pdf,xlsx,md,json 2>&1 | tee terminal.log
+      - name: Как Аудитор читает сайт — сайт из сравнения, с замыливанием
+        run: |
+          node dist/cli.js https://azalianow.ru -p 8 -o scan -f json,html
+          node scripts/media/scan.mjs scan/audit.json https://azalianow.ru "$TERMS"
+          cp scan/*.html media/scan/report.html
+      - run: npx playwright-core install ffmpeg
+      - run: node scripts/media/capture.mjs report terminal.log "$TERMS"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: media
+          path: |
+            media/
+            report/audit.json
+            report/*.md
+            report/*.html
+  mcpb:
+    # расширение Claude Desktop из этой ветки — для записи экрана на ПК
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm }
+      - run: npm ci && npm run build:mcpb
+      - uses: actions/upload-artifact@v7
+        with: { name: site-audit-ru-mcpb, path: build/site-audit-ru.mcpb }
