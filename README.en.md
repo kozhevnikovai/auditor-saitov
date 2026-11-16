@@ -10,7 +10,7 @@ Give it your site and 2–4 competitors. In a couple of minutes you get a report
 
 <p align="center"><img src="docs/img/demo.gif" alt="Report: summary, competitor comparison, detailed findings, Issues only filter" width="100%"></p>
 
-<sub>A real report on three real flower-delivery sites. Domains, names and phone numbers are blurred.</sub>
+<sub>A real report on three real flower-delivery sites. Domains, names and phone numbers are blurred. 45-second video: [docs/video/promo.mp4](docs/video/promo.mp4).</sub>
 
 ## Install in 3 steps
 
