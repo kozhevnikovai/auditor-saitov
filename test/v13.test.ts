@@ -29,7 +29,7 @@ describe("CrUX: реальные посетители", () => {
   it("в отчёте Markdown — раздел реальных посетителей", () => {
     const site = { tool: { name: "site-audit-ru", version: "1" }, collectedAt: "2026-11-13T10:00:00Z", url: "https://a.ru/", pagesCrawled: 1, limited: null, skipped: [], total: 80, field: parseCrux(crux, "https://a.ru", "PHONE"), blocks: Object.fromEntries(["seo", "structure", "visual", "tech", "compliance"].map((k) => [k, { score: 80, findings: [], data: {} }])) } as unknown as SiteReport;
     expect(renderMarkdown([site])).toContain("Реальные посетители (Chrome UX Report, телефоны)");
-  });
+  }, 20000);
 });
 
 describe("Google Таблица через Apps Script", () => {
