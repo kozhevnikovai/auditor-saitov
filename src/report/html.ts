@@ -27,10 +27,10 @@ function font(pkg: string, file: string): string {
 
 export function fontFaces(): string {
   const faces: [string, string, string, number, string][] = [
-    ["Geologica", "@fontsource/geologica", "geologica-cyrillic-400-normal.woff2", 400, "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116"],
-    ["Geologica", "@fontsource/geologica", "geologica-latin-400-normal.woff2", 400, "U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-2193"],
-    ["Geologica", "@fontsource/geologica", "geologica-cyrillic-600-normal.woff2", 600, "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116"],
-    ["Geologica", "@fontsource/geologica", "geologica-latin-600-normal.woff2", 600, "U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-2193"],
+    ["Onest", "@fontsource/onest", "onest-cyrillic-400-normal.woff2", 400, "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116"],
+    ["Onest", "@fontsource/onest", "onest-latin-400-normal.woff2", 400, "U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-2193"],
+    ["Onest", "@fontsource/onest", "onest-cyrillic-600-normal.woff2", 600, "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116"],
+    ["Onest", "@fontsource/onest", "onest-latin-600-normal.woff2", 600, "U+0000-00FF,U+2000-206F,U+20AC,U+2122,U+2190-2193"],
   ];
   return faces
     .map(([fam, pkg, file, w, range]) => {
@@ -79,7 +79,7 @@ export function mdToHtml(md: string): string {
   return out.join("\n");
 }
 
-const LOGO = `<svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><path d="M186 146 V366 M186 276 L320 146 M226 237 L330 366" fill="none" stroke="#1A1A19" stroke-width="36" stroke-linecap="square"/><circle cx="352" cy="146" r="22" fill="#C2410C"/></svg>`;
+const LOGO = `<svg class="logo" viewBox="0 0 120 120" aria-hidden="true"><rect x="1" y="1" width="118" height="118" rx="28" fill="#FFFFFF" stroke="#D5D9DF" stroke-width="1.5"/><rect x="16" y="24" width="80" height="62" rx="8" stroke="#1A1A1A" stroke-width="4.5" fill="none"/><path d="M16 38 H96" stroke="#1A1A1A" stroke-width="4"/><circle cx="25" cy="31" r="2.5" fill="#FF7A33"/><circle cx="33" cy="31" r="2.5" fill="#1A1A1A"/><circle cx="41" cy="31" r="2.5" fill="#1A1A1A"/><path d="M30 74 V62 M54 74 V66" stroke="#1A1A1A" stroke-width="6" stroke-linecap="round"/><path d="M42 74 V52" stroke="#FF7A33" stroke-width="6" stroke-linecap="round"/><circle cx="84" cy="80" r="13" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="4.5"/><path d="M93.5 89.5 L102 98" stroke="#1A1A1A" stroke-width="5" stroke-linecap="round"/></svg>`;
 
 // ───────────────────────────── вспомогательное ─────────────────────────────
 
@@ -123,27 +123,27 @@ function radar(sites: SiteReport[]): string {
   };
   const ring = (v: number) => KEYS.map((_, i) => pt(i, v).join(",")).join(" ");
   const dashes = ["7 4", "2 3", "10 3 2 3", "4 4"];
-  const grays = ["#5C5C57", "#A8A8A2", "#7A7A74", "#C4C4BE"];
+  const grays = ["#5E6470", "#B8BEC8", "#8A909C", "#D0D4DB"];
   const polys = ok
     .map((s, j) => {
       const pts = KEYS.map((k, i) => pt(i, s.blocks[k].score).join(",")).join(" ");
       const own = s === sites[0];
-      return `<polygon points="${pts}" fill="none" stroke="${own ? "#C2410C" : grays[(j - 1) % 4]}" stroke-width="${own ? 2.5 : 1.5}" ${own ? "" : `stroke-dasharray="${dashes[(j - 1) % 4]}"`}/>` +
-        (own ? KEYS.map((k, i) => { const [x, y] = pt(i, s.blocks[k].score); return `<circle cx="${x}" cy="${y}" r="3.5" fill="#C2410C"/>`; }).join("") : "");
+      return `<polygon points="${pts}" fill="none" stroke="${own ? "#16181D" : grays[(j - 1) % 4]}" stroke-width="${own ? 2.5 : 1.5}" ${own ? "" : `stroke-dasharray="${dashes[(j - 1) % 4]}"`}/>` +
+        (own ? KEYS.map((k, i) => { const [x, y] = pt(i, s.blocks[k].score); return `<circle cx="${x}" cy="${y}" r="3.5" fill="#FF7A33"/>`; }).join("") : "");
     })
     .join("");
   const labels = KEYS.map((k, i) => {
     const [x, y] = pt(i, 122);
     const anchor = Math.abs(x - cx) < 10 ? "middle" : x > cx ? "start" : "end";
     const short = { seo: "SEO", structure: "Структура", visual: "Стиль", tech: "Технологии", compliance: "Законы РФ" }[k];
-    return `<text x="${x}" y="${y + (y > cy ? 14 : -4)}" text-anchor="${anchor}" font-size="13" fill="#5C5C57">${short}</text>`;
+    return `<text x="${x}" y="${y + (y > cy ? 14 : -4)}" text-anchor="${anchor}" font-size="13" fill="#5E6470">${short}</text>`;
   }).join("");
   const legend = ok
-    .map((s, j) => `<span class="lg"><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="${s === sites[0] ? "#C2410C" : grays[(j - 1) % 4]}" stroke-width="${s === sites[0] ? 2.5 : 1.5}" ${s === sites[0] ? "" : `stroke-dasharray="${dashes[(j - 1) % 4]}"`}/></svg>${esc(hostOf(s.url))}</span>`)
+    .map((s, j) => `<span class="lg"><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="${s === sites[0] ? "#16181D" : grays[(j - 1) % 4]}" stroke-width="${s === sites[0] ? 2.5 : 1.5}" ${s === sites[0] ? "" : `stroke-dasharray="${dashes[(j - 1) % 4]}"`}/></svg>${esc(hostOf(s.url))}</span>`)
     .join("");
   return `<figure class="radar"><svg viewBox="0 0 500 350" role="img" aria-label="Сравнение по блокам">
-${[25, 50, 75, 100].map((v) => `<polygon points="${ring(v)}" fill="none" stroke="#E8E8E5" stroke-width="1"/>`).join("")}
-${KEYS.map((_, i) => { const [x, y] = pt(i, 100); return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#D6D6D2" stroke-width="1" stroke-dasharray="26 6 3 6"/>`; }).join("")}
+${[25, 50, 75, 100].map((v) => `<polygon points="${ring(v)}" fill="none" stroke="#E3E6EA" stroke-width="1"/>`).join("")}
+${KEYS.map((_, i) => { const [x, y] = pt(i, 100); return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#D5D9DF" stroke-width="1" stroke-dasharray="26 6 3 6"/>`; }).join("")}
 ${polys}${labels}</svg><figcaption>${legend}</figcaption></figure>`;
 }
 
@@ -301,23 +301,23 @@ ${KEYS.map((k) => {
   const fileName = `site-audit-${hostOf(own.url)}-${(own.collectedAt ?? "").slice(0, 10)}.html`;
   return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title>
 <style>${fontFaces()}
-:root{--ink:#1A1A19;--pencil:#5C5C57;--axis:#D6D6D2;--line:#E8E8E5;--plate:#F1F1EE;--bg:#FBFBFA;--signal:#C2410C;--signal-text:#B3261E;--warn:#9A5B00;--warn-bg:#FFF3DF;--good:#1F7A4A;--good-bg:#E7F3EC;--bad-bg:#FCE9E7}
-*{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{margin:0;color:var(--ink);font:400 15px/1.6 Geologica,system-ui,-apple-system,"Segoe UI",sans-serif}
+:root{--ink:#16181D;--pencil:#5E6470;--axis:#D5D9DF;--line:#E3E6EA;--plate:#F0F2F5;--bg:#F4F5F7;--signal:#C2560F;--dot:#FF7A33;--signal-text:#B3261E;--warn:#9A5B00;--warn-bg:#FFF3DF;--good:#1F7A4A;--good-bg:#E7F3EC;--bad-bg:#FCE9E7}
+*{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{margin:0;color:var(--ink);font:400 15px/1.6 Onest,system-ui,-apple-system,"Segoe UI",sans-serif}
 .mono,code{font-variant-numeric:tabular-nums}code{font-family:ui-monospace,Consolas,monospace;font-size:.86em;background:var(--plate);border-radius:5px;padding:0 4px}.small{font-size:12.5px}.muted{color:var(--pencil)}b.v{font-weight:600;font-variant-numeric:tabular-nums}
 .sheet{max-width:1180px;margin:24px auto;padding:0 20px}
-header.top{display:flex;align-items:center;gap:16px;padding:12px 0 18px}.logo{width:40px;height:40px;border-radius:10px;background:#fff;border:1px solid var(--line)}
+header.top{display:flex;align-items:center;gap:16px;padding:12px 0 18px}.logo{width:40px;height:40px}
 header.top h1{font-size:26px;line-height:1.2;margin:0;font-weight:600;letter-spacing:-.01em}header.top .meta{margin-left:auto;text-align:right;color:var(--pencil)}
-.toolbar{position:sticky;top:0;z-index:5;background:rgba(251,251,250,.94);backdrop-filter:blur(6px);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.toolbar{position:sticky;top:0;z-index:5;background:rgba(244,245,247,.94);backdrop-filter:blur(6px);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .toolbar nav{display:flex;flex-wrap:wrap;gap:4px 14px}.toolbar nav a{color:var(--pencil);text-decoration:none;font-size:13.5px}.toolbar nav a:hover{color:var(--ink)}
-.toolbar .btns{margin-left:auto;display:flex;gap:8px}.btn{font:500 13px Geologica,system-ui,sans-serif;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:7px 12px;cursor:pointer}.btn:hover{background:var(--plate)}.btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.toolbar .btns{margin-left:auto;display:flex;gap:8px}.btn{font:500 13px Onest,system-ui,sans-serif;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:7px 12px;cursor:pointer}.btn:hover{background:var(--plate)}.btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .btn:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 main{padding:8px 0 28px}section{margin:24px 0;scroll-margin-top:60px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 h3{font-size:19px;font-weight:600;margin:0 0 14px;display:flex;align-items:baseline;gap:10px}h3 .n{display:none}h4{font-size:16px;font-weight:600;margin:20px 0 10px}
 .label{color:var(--pencil);font-size:13px;display:block}
 .mark{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}.mark.fail{background:var(--signal-text)}.mark.warn{background:var(--warn)}.mark.good{background:var(--good)}
-.chip{display:inline-block;font:600 12px Geologica,system-ui,sans-serif;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.chip{display:inline-block;font:600 12px Onest,system-ui,sans-serif;padding:2px 10px;border-radius:999px;white-space:nowrap}
 .chip.fail{color:var(--signal-text);background:var(--bad-bg)}.chip.warn{color:var(--warn);background:var(--warn-bg)}.chip.good{color:var(--good);background:var(--good-bg)}.chip.info{color:var(--pencil);background:var(--plate)}
-.badge{display:inline-block;font:600 13px Geologica;padding:3px 12px;border-radius:999px}.badge.good{color:var(--good);background:var(--good-bg)}.badge.warn{color:var(--warn);background:var(--warn-bg)}.badge.fail{color:var(--signal-text);background:var(--bad-bg)}
+.badge{display:inline-block;font:600 13px Onest;padding:3px 12px;border-radius:999px}.badge.good{color:var(--good);background:var(--good-bg)}.badge.warn{color:var(--warn);background:var(--warn-bg)}.badge.fail{color:var(--signal-text);background:var(--bad-bg)}
 .fail.big,.fail.s-score{color:var(--signal-text)}.warn.big,.warn.s-score{color:var(--warn)}.good.big,.good.s-score{color:var(--good)}
 /* Главное */
 .key{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.key-grid{display:grid;grid-template-columns:1.1fr 1.2fr 1fr;gap:0}.key-grid>div{padding:0 22px;border-left:1px solid var(--line)}.key-grid>div:first-child{padding-left:0;border-left:0}
@@ -332,11 +332,11 @@ section.cards-wrap{background:none;border:0;box-shadow:none;padding:0}
 .card-body{margin-top:14px}.total{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}.big{font-size:42px;line-height:1.1;font-weight:600;font-variant-numeric:tabular-nums}.mini{margin-left:auto;color:var(--pencil)}.mini .mark{margin-left:6px}
 .bars{display:grid;grid-template-columns:auto minmax(60px,1fr) 34px;gap:6px 12px;align-items:center}.bl{font-size:13px;color:var(--pencil);white-space:nowrap}
 .gauge{position:relative;display:block;height:8px;border-radius:4px;background:var(--plate);overflow:hidden}.gauge .track,.gauge .tick{display:none}
-.gauge .fill{position:absolute;left:0;top:0;height:8px;border-radius:4px;background:#A8A8A2}.gauge .fill.fail{background:var(--signal-text)}.gauge .fill.warn{background:#D9A441}.gauge .fill.good{background:var(--good)}.num{text-align:right;font-variant-numeric:tabular-nums}
+.gauge .fill{position:absolute;left:0;top:0;height:8px;border-radius:4px;background:#B8BEC8}.gauge .fill.fail{background:var(--signal-text)}.gauge .fill.warn{background:#D9A441}.gauge .fill.good{background:var(--good)}.num{text-align:right;font-variant-numeric:tabular-nums}
 .shots{display:flex;gap:12px;margin-top:14px;align-items:flex-end}.shots figure{margin:0;flex:1}.shots figure.m{flex:0 0 26%}.shots img{width:100%;display:block;border:1px solid var(--line);border-radius:10px}figcaption{color:var(--pencil);margin-top:4px}
 .warnline{border-radius:10px;background:var(--bad-bg);padding:8px 12px;margin:10px 0 0}
 /* сравнение */
-.cmp-grid{display:grid;grid-template-columns:440px 1fr;gap:24px;align-items:start}.radar{margin:0}.radar svg{width:100%;height:auto;font-family:Geologica}.radar figcaption{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px}.lg{display:inline-flex;align-items:center;gap:6px}.lg svg{display:block}
+.cmp-grid{display:grid;grid-template-columns:440px 1fr;gap:24px;align-items:start}.radar{margin:0}.radar svg{width:100%;height:auto;font-family:Onest}.radar figcaption{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px}.lg{display:inline-flex;align-items:center;gap:6px}.lg svg{display:block}
 .scroll{overflow-x:auto}table.cmp{border-collapse:separate;border-spacing:0;width:100%;border:1px solid var(--line);border-radius:12px;overflow:hidden}table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}table.cmp th{font-weight:600;background:var(--plate);color:var(--pencil);font-size:13px}
 table.cmp td.best{font-weight:600;background:var(--good-bg)}table.cmp tr.sum td{font-weight:600;background:var(--plate);border-bottom:0}
 .tag{display:inline-block;background:var(--plate);border-radius:999px;padding:1px 9px;font-size:12px;color:var(--ink);white-space:nowrap}
