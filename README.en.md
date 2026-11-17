@@ -28,7 +28,7 @@ Requires Google Chrome, Microsoft Edge (built into Windows), Yandex Browser or C
 - **Competitor style in numbers:** HEX palette, fonts, type scale, WCAG contrast, desktop & mobile screenshots.
 - **Deterministic data, optional AI.** A crawler collects reproducible facts; AI only interprets them.
 - **New in 1.3.** Real-user speed from CrUX (with your free Google key), PDF report, scheduled checks on your own computer, export to Google Sheets without OAuth.
-- **Local and free.** Runs in your own Chrome, Edge or Yandex Browser; nothing is sent anywhere; the report loads no external resources.
+- **Local and free.** Runs in your own Chrome, Edge or Yandex Browser; the report stays with you and loads no external resources. Data leaves your computer only when you turn it on: the summary goes to Claude (extension mode), the AI conclusion to your own API key, a webhook, a Google Sheet, the CrUX key.
 
 ### Output
 
@@ -46,7 +46,7 @@ Requires Google Chrome, Microsoft Edge (built into Windows), Yandex Browser or C
    /plugin install site-audit-ru@kozhevnikovai
    /site-audit example.ru a.ru b.ru
    ```
-- **CLI (Node.js 20+):**
+- **CLI (Node.js 22.12+):**
    ```bash
    npm install -g https://github.com/kozhevnikovai/auditor-saitov/releases/latest/download/site-audit-ru.tgz
    site-audit-ru example.ru a.ru b.ru --open

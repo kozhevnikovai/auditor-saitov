@@ -4,7 +4,7 @@
   "display_name": "Аудитор сайтов",
   "version": "0.0.0",
   "description": "Аудит сайта и конкурентов прямо в чате: SEO, структура и конверсия, визуальный стиль, технологии, соответствие законам РФ.",
-  "long_description": "Попросите Claude: «Сравни мой сайт example.ru с конкурентами a.ru и b.ru». Расширение обойдёт сайты в вашем браузере (Chrome, Edge или Яндекс Браузер), проверит SEO и скорость, путь к заявке, стиль, технологии, 152-ФЗ и реквизиты, сохранит отчёты HTML, Markdown и CSV в папку site-audit в вашей домашней папке и вернёт сводку для анализа. Работает локально, данные никуда не отправляются.",
+  "long_description": "Попросите Claude: «Сравни мой сайт example.ru с конкурентами a.ru и b.ru». Расширение обойдёт сайты в вашем браузере (Chrome, Edge или Яндекс Браузер), проверит SEO и скорость, путь к заявке, стиль, технологии, 152-ФЗ и реквизиты, сохранит отчёты HTML, Markdown и CSV в папку site-audit в вашей домашней папке и вернёт сводку для анализа. Обход сайтов идёт локально; сводку для анализа получает Claude.",
   "author": { "name": "Egor Kozhevnikov", "url": "https://github.com/kozhevnikovai" },
   "repository": { "type": "git", "url": "https://github.com/kozhevnikovai/auditor-saitov" },
   "homepage": "https://github.com/kozhevnikovai/auditor-saitov",
@@ -48,5 +48,5 @@
       "default": ""
     }
   },
-  "compatibility": { "platforms": ["win32", "darwin", "linux"], "runtimes": { "node": ">=20.0.0" } }
+  "compatibility": { "platforms": ["win32", "darwin", "linux"], "runtimes": { "node": ">=22.12.0" } }
 }

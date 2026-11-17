@@ -23,6 +23,16 @@ const page = (title: string, body: string) => `<!doctype html><html lang="ru"><h
 describe("сеть: только публичные адреса", () => {
   it.each(["127.0.0.1", "10.1.2.3", "192.168.0.1", "172.16.5.4", "169.254.169.254", "100.64.0.1", "0.0.0.0", "::1", "fd00::1", "fe80::1", "::ffff:127.0.0.1", "224.0.0.1"])("%s — частный или служебный", (ip) => expect(isPrivateIp(ip)).toBe(true));
   it.each(["8.8.8.8", "77.88.55.88", "2a02:6b8::2:242"])("%s — публичный", (ip) => expect(isPrivateIp(ip)).toBe(false));
+  // аудит: эквивалентные записи IPv6 (URL сам превращает [::ffff:127.0.0.1] в [::ffff:7f00:1])
+  it.each(["::ffff:7f00:1", "[::ffff:7f00:1]", "::ffff:a9fe:a9fe", "::ffff:c0a8:1", "0:0:0:0:0:ffff:7f00:1", "::7f00:1", "::127.0.0.1", "::ffff:0:7f00:1", "2002:7f00:1::", "2002:c0a8:101::1", "64:ff9b::7f00:1", "2001:0:1::1", "0::1", "0:0:0:0:0:0:0:1", "fe80::1%eth0", "fec0::1", "ff02::1", "198.51.100.7", "203.0.113.9"])("%s — частный в другой записи", (ip) => expect(isPrivateIp(ip)).toBe(true));
+  it.each(["::ffff:808:808", "2002:808:808::1", "2a00:1450:4010:c05::66"])("%s — публичный в IPv6-записи", (ip) => expect(isPrivateIp(ip)).toBe(false));
+  it("URL с IPv4 внутри IPv6 заблокирован в обоих путях: проверка адреса и запрос", async () => {
+    const host = new URL("http://[::ffff:127.0.0.1]:9/").hostname;
+    expect(host).toBe("[::ffff:7f00:1]");
+    await expect(assertPublicUrl("http://[::ffff:127.0.0.1]:9/", false)).rejects.toThrow(/заблокирован/);
+    const r = await safeGetText("http://[::ffff:127.0.0.1]:9/robots.txt", { timeoutMs: 2000, userAgent: "t", allowPrivate: false });
+    expect(r.status).toBe(0);
+  });
   it.each(["http://localhost/", "http://127.0.0.1:8080/", "http://[::1]/", "http://169.254.169.254/latest/meta-data/", "http://router.local/", "http://0.0.0.0/"])("%s блокируется", async (u) => {
     await expect(assertPublicUrl(u, false)).rejects.toThrow(/локальную или служебную сеть/);
   });

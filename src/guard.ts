@@ -6,20 +6,53 @@ import { isIP } from "node:net";
 import { fetch as ufetch } from "undici";
 import { guardedAgent } from "./egress.js";
 
-/** Адрес из частной, служебной или зарезервированной сети */
+function privateV4(ip: string): boolean {
+  const [a, b, c] = ip.split(".").map(Number);
+  return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) || (a === 192 && b === 0) || (a === 198 && (b === 18 || b === 19)) ||
+    (a === 198 && b === 51 && c === 100) || (a === 203 && b === 0 && c === 113) || a >= 224;
+}
+
+/** IPv6 в 8 групп по 16 бит; любая запись: сокращённая, с IPv4 в конце, с зоной (%eth0). null — не IPv6 */
+export function parseIPv6(ip: string): number[] | null {
+  let s = ip.toLowerCase().replace(/^\[|\]$/g, "").replace(/%.*$/, "");
+  if (isIP(s) !== 6) return null;
+  const tail = s.match(/(\d+\.\d+\.\d+\.\d+)$/);
+  if (tail) {
+    const [a, b, c, d] = tail[1].split(".").map(Number);
+    s = s.slice(0, -tail[1].length) + ((a << 8) | b).toString(16) + ":" + ((c << 8) | d).toString(16);
+  }
+  const [head, rest] = s.includes("::") ? s.split("::") : [s, null];
+  const h = head ? head.split(":") : [];
+  const r = rest ? rest.split(":") : [];
+  const fill = rest === null ? [] : Array(8 - h.length - r.length).fill("0");
+  const groups = [...h, ...fill, ...r].map(x => parseInt(x, 16));
+  return groups.length === 8 && groups.every(g => g >= 0 && g <= 0xffff) ? groups : null;
+}
+
+const v4of = (hi: number, lo: number) => `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+
+/** Адрес из частной, служебной или зарезервированной сети. IPv6 разбирается в числа, поэтому эквивалентные записи одного адреса дают одинаковый ответ. */
 export function isPrivateIp(ip: string): boolean {
-  const v = isIP(ip);
-  if (v === 4) {
-    const [a, b] = ip.split(".").map(Number);
-    return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) || (a === 192 && b === 0) || (a === 198 && (b === 18 || b === 19)) || a >= 224;
-  }
-  if (v === 6) {
-    const s = ip.toLowerCase().replace(/^\[|\]$/g, "");
-    const mapped = s.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isPrivateIp(mapped[1]);
-    return s === "::" || s === "::1" || /^f[cd]/.test(s) || /^fe[89ab]/.test(s) || /^ff/.test(s) || s.startsWith("64:ff9b:") || s.startsWith("2001:db8");
-  }
+  const v = isIP(ip.replace(/^\[|\]$/g, "").replace(/%.*$/, ""));
+  if (v === 4) return privateV4(ip);
+  if (v !== 6) return false;
+  const g = parseIPv6(ip);
+  if (!g) return true; // не смогли разобрать — считаем опасным
+  const zero = (from: number, to: number) => g.slice(from, to).every(x => x === 0);
+  if (zero(0, 8)) return true; // ::
+  if (zero(0, 7) && g[7] === 1) return true; // ::1
+  // IPv4 внутри IPv6: ::ffff:a.b.c.d (mapped), ::a.b.c.d (compatible), ::ffff:0:a.b.c.d (translated) — проверяем сам IPv4
+  if (zero(0, 5) && (g[5] === 0xffff || g[5] === 0)) return privateV4(v4of(g[6], g[7]));
+  if (zero(0, 4) && g[4] === 0xffff && g[5] === 0) return privateV4(v4of(g[6], g[7]));
+  if (g[0] === 0x64 && g[1] === 0xff9b) return true; // NAT64 64:ff9b::/96 и 64:ff9b:1::/48
+  if (g[0] === 0x2002) return privateV4(v4of(g[1], g[2])); // 6to4
+  if (g[0] === 0x2001 && g[1] === 0) return true; // Teredo
+  if (g[0] === 0x2001 && g[1] === 0xdb8) return true; // документация
+  if (g[0] === 0x100 && zero(1, 4)) return true; // discard 100::/64
+  if ((g[0] & 0xfe00) === 0xfc00) return true; // fc00::/7 — частные
+  if ((g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xffc0) === 0xfec0) return true; // link-local, site-local
+  if ((g[0] & 0xff00) === 0xff00) return true; // multicast
   return false;
 }
 
