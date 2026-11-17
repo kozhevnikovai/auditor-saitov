@@ -49,6 +49,15 @@ describe("DNS rebinding: проверка в момент соединения",
   it("служебные адреса и имена: 169.254.169.254, ::1, ::ffff:10.0.0.1, *.localhost", async () => {
     for (const h of ["169.254.169.254", "::1", "::ffff:10.0.0.1", "admin.localhost", "nas.local"]) await expect(look(false, h)).rejects.toThrow(/локальную сеть/);
   });
+  it("аудит: IPv4 внутри IPv6 (hex-запись) блокируется в lookup, DNS-ответе и прокси браузера", async () => {
+    for (const h of ["::ffff:7f00:1", "::ffff:a00:1", "::7f00:1", "2002:7f00:1::"]) await expect(look(false, h)).rejects.toThrow(/локальную сеть/);
+    await expect(look(false, "m.test", fixed({ "m.test": ["::ffff:7f00:1"] }))).rejects.toThrow(/локальную сеть/);
+    const proxy = await startEgressProxy({ allowPrivate: false });
+    try {
+      expect(await tunnel(proxy.url, `[::ffff:7f00:1]:${port}`)).not.toMatch(/ 200 /);
+      expect(await viaProxy(proxy.url, `http://[::ffff:7f00:1]:${port}/`)).not.toBe(200);
+    } finally { await proxy.close(); }
+  });
   it("публичный адрес проходит; с --allow-private проходит и локальный", async () => {
     await expect(look(false, "ok.test", fixed({ "ok.test": ["93.184.216.34"] }))).resolves.toBe("93.184.216.34");
     await expect(look(true, "lan.test", fixed({ "lan.test": ["192.168.1.10"] }))).resolves.toBe("192.168.1.10");

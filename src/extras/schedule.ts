@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { posix, win32 } from "node:path";
+import { VERSION } from "../version.js";
 
 export type Every = "day" | "week";
 export interface ScheduleOptions { urls: string[]; every: Every; at: string; webhook?: string; sheet?: string; maxPages?: number; dir?: string }
@@ -26,7 +27,8 @@ export function taskName(urls: string[]): string {
 /** Аргументы проверки — одинаковые для Windows и cron */
 export function auditArgs(o: ScheduleOptions): string[] {
   if (!o.urls.length || o.urls.length > 5) throw new Error("В расписание — от 1 до 5 сайтов");
-  const args = ["-y", "site-audit-ru", ...o.urls.map((u) => safeUrl(u)), "--compare-last", "-f", "html,md,csv,xlsx"];
+  // версия закреплена: задание запускает ту же версию, которой его создали, а не случайную из npm
+  const args = ["-y", `site-audit-ru@${VERSION}`, ...o.urls.map((u) => safeUrl(u)), "--compare-last", "-f", "html,md,csv,xlsx"];
   if (o.maxPages) args.push("-p", String(Math.min(50, Math.max(1, Math.floor(o.maxPages)))));
   if (o.webhook) args.push("--webhook", safeUrl(o.webhook, "Webhook"));
   if (o.sheet) args.push("--sheet", safeUrl(o.sheet, "Адрес таблицы"));

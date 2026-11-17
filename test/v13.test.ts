@@ -9,6 +9,7 @@ import { htmlToPdf } from "../src/extras/pdf.js";
 import { renderMarkdown } from "../src/report/md.js";
 import { parseFormats } from "../src/output.js";
 import type { SiteReport } from "../src/types.js";
+import { VERSION } from "../src/version.js";
 
 const crux = { record: { metrics: { largest_contentful_paint: { percentiles: { p75: 3100 } }, interaction_to_next_paint: { percentiles: { p75: 150 } }, cumulative_layout_shift: { percentiles: { p75: "0.31" } } }, collectionPeriod: { firstDate: { year: 2026, month: 10, day: 14 }, lastDate: { year: 2026, month: 11, day: 10 } } } };
 
@@ -57,14 +58,14 @@ describe("проверка по расписанию", () => {
     for (const bad of ["a.ru/?x=1", "a.ru/&calc", "a.ru/%PATH%", "a.ru/\"x", "a.ru/$(id)", "a.ru/`id`", "a.ru/a b", "a.ru;rm -rf /", "file:///etc/passwd", "a.ru/'x"]) expect(() => safeUrl(bad)).toThrow(/нельзя поставить/);
   });
   it("аргументы проверки и ограничения", () => {
-    expect(auditArgs(o)).toEqual(["-y", "site-audit-ru", "https://shop.ru", "https://rival.ru/catalog/", "--compare-last", "-f", "html,md,csv,xlsx"]);
+    expect(auditArgs(o)).toEqual(["-y", `site-audit-ru@${VERSION}`, "https://shop.ru", "https://rival.ru/catalog/", "--compare-last", "-f", "html,md,csv,xlsx"]);
     expect(() => auditArgs({ ...o, urls: Array(6).fill("a.ru") })).toThrow();
     expect(() => cronLine({ ...o, at: "25:00" })).toThrow(/ЧЧ:ММ/);
     expect(taskName(o.urls)).toBe("site-audit-ru-shop.ru");
   });
   it("cron: строка с меткой, повторное добавление заменяет старую, удаление", () => {
     const line = cronLine(o);
-    expect(line).toBe("5 9 * * 1 cd '/home/u/site-audit' && npx -y site-audit-ru https://shop.ru https://rival.ru/catalog/ --compare-last -f html,md,csv,xlsx >> '/home/u/site-audit/schedule.log' 2>&1 # site-audit-ru:site-audit-ru-shop.ru");
+    expect(line).toBe(`5 9 * * 1 cd '/home/u/site-audit' && npx -y site-audit-ru@${VERSION} https://shop.ru https://rival.ru/catalog/ --compare-last -f html,md,csv,xlsx >> '/home/u/site-audit/schedule.log' 2>&1 # site-audit-ru:site-audit-ru-shop.ru`);
     let tab = mergeCrontab("0 1 * * * backup\n", "site-audit-ru-shop.ru", line);
     tab = mergeCrontab(tab, "site-audit-ru-shop.ru", cronLine({ ...o, every: "day" }));
     expect(tab.split("\n").filter(Boolean)).toHaveLength(2);

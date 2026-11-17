@@ -20,8 +20,11 @@ const mask = rx => {
 const html = readdirSync(dir).find(f => f.endsWith(".html"));
 const b = await chromium.launch({ executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome" });
 const p = await b.newPage({ viewport: { width: 1280, height: 800 }, recordVideo: { dir: OUT + "/raw", size: { width: 1280, height: 800 } } });
+// страница скрыта, пока не замылены домены и телефоны: в записи не должно быть ни одного незамыленного кадра
+await p.addInitScript(() => { document.documentElement.style.visibility = "hidden"; });
 await p.goto("file://" + join(process.cwd(), dir, html)); await p.waitForTimeout(800);
 await p.evaluate(mask, re.source);
+await p.evaluate(() => { document.documentElement.style.visibility = "visible"; });
 await p.screenshot({ path: `${OUT}/report.png` });
 // работа в интерфейсе отчёта: меню, сравнение, подробности, фильтр «Только проблемы»
 const step = async (name, act) => { await act(); await p.waitForTimeout(1300); await p.screenshot({ path: `${OUT}/${name}.png` }); };
