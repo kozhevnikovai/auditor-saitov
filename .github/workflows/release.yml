@@ -1,12 +1,13 @@
 name: release
 # Публикуете релиз в интерфейсе GitHub (тег vX.Y.Z) → тесты, сборка, к релизу прикладываются
 # site-audit-ru.tgz (CLI и MCP через npx) и site-audit-ru.mcpb (расширение Claude Desktop).
-# Если в секретах репозитория есть NPM_TOKEN — пакет публикуется и в npm.
+# Пакет публикуется в npm через Trusted Publishing (OIDC); первый выпуск — по секрету NPM_TOKEN. SHA256SUMS — суммы файлов.
 on:
   release:
     types: [published]
 permissions:
   contents: write
+  id-token: write
 jobs:
   assets:
     runs-on: ubuntu-latest
@@ -25,12 +26,13 @@ jobs:
       - run: npm test
       - run: npm pack && mv site-audit-ru-*.tgz site-audit-ru.tgz
       - run: node scripts/build-mcpb.mjs
+      - run: cp build/site-audit-ru.mcpb . && sha256sum site-audit-ru.tgz site-audit-ru.mcpb > SHA256SUMS && cat SHA256SUMS
       - uses: softprops/action-gh-release@v3
         with:
           files: |
             site-audit-ru.tgz
             build/site-audit-ru.mcpb
-      - name: npm publish (если задан NPM_TOKEN)
-        continue-on-error: true
-        if: ${{ env.NODE_AUTH_TOKEN != '' }}
-        run: npm publish --access public
+            SHA256SUMS
+      # Trusted Publishing (OIDC, без токена) — нужен npm 11.5+; первый выпуск нового пакета — по секрету NPM_TOKEN
+      - run: npm install -g npm@latest
+      - run: npm publish --access public
